@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --vert-profond: #173D2E;
+    --vert-moyen: #1F5C43;
+    --or-ambre: #E8A33D;
+    --or-clair: #F4CB86;
+    --creme: #FBF6EC;
+    --encre: #17201C;
+    --sauge: #BFD3C4;
+    --whatsapp: #25D366;
+  }
+
+  body {
+    background-color: var(--creme);
+    color: var(--encre);
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Sora', sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Custom Gold Trait Underline for "opportunité" */
+.gold-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.gold-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background-color: var(--or-ambre);
+  border-radius: 4px;
+}
+
+/* WhatsApp Phone Notification Looping Animation */
+@keyframes whatsappBubbleLoop {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  90% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+}
+
+.whatsapp-notification-loop {
+  animation: whatsappBubbleLoop 6s ease-in-out infinite;
+}
+
+/* Accessibility: Disable / reduce animations when prefers-reduced-motion is active */
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-notification-loop {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
