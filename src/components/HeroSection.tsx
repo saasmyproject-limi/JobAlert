@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessageSquare, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Link } from '../router/Router';
 
 export const HeroSection: React.FC = () => {
   return (
@@ -27,20 +28,20 @@ export const HeroSection: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
-            <a
-              href="#creer-profil"
+            <Link
+              to="/inscription"
               className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full bg-vert-profond hover:bg-vert-moyen text-creme font-sora font-bold text-base transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 text-center"
             >
               <span>Créer mon profil gratuitement</span>
               <ArrowRight className="w-5 h-5" />
-            </a>
+            </Link>
 
-            <a
-              href="#publier-une-offre"
+            <Link
+              to="/publier"
               className="inline-flex items-center justify-center px-7 py-4 rounded-full border-2 border-vert-profond text-vert-profond hover:bg-vert-profond/10 font-sora font-bold text-base transition-all duration-200 text-center"
             >
               J'ai un poste à pourvoir
-            </a>
+            </Link>
           </div>
 
           {/* Small Sub-mention */}

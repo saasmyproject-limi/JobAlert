@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { Link } from '../router/Router';
 
 export const FinalCTA: React.FC = () => {
   return (
@@ -28,13 +29,13 @@ export const FinalCTA: React.FC = () => {
 
         {/* CTA Button */}
         <div className="relative z-10 pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a
-            href="#"
+          <Link
+            to="/inscription"
             className="inline-flex items-center justify-center gap-2 px-9 py-5 rounded-full bg-vert-profond hover:bg-vert-moyen text-creme font-sora font-extrabold text-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 text-center w-full sm:w-auto"
           >
             <span>Créer mon profil gratuitement</span>
             <ArrowRight className="w-5 h-5 text-or-clair" />
-          </a>
+          </Link>
         </div>
 
         <p className="relative z-10 text-xs text-encre/60 font-medium">

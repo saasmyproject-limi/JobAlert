@@ -1,41 +1,68 @@
 import React from 'react';
-import { Navbar } from './components/Navbar';
-import { HeroSection } from './components/HeroSection';
-import { HowItWorksSection } from './components/HowItWorksSection';
-import { CoverageSection } from './components/CoverageSection';
-import { PublishBanner } from './components/PublishBanner';
-import { FinalCTA } from './components/FinalCTA';
+import { RouterProvider, useLocation } from './router/Router';
+import { AuthProvider } from './context/AuthContext';
+import { AppNavbar } from './components/AppNavbar';
 import { Footer } from './components/Footer';
+
+// Pages
+import { HomePage } from './pages/HomePage';
+import { RegisterPage } from './pages/RegisterPage';
+import { LoginPage } from './pages/LoginPage';
+import { OffersListPage } from './pages/OffersListPage';
+import { OfferDetailPage } from './pages/OfferDetailPage';
+import { PublishOfferPage } from './pages/PublishOfferPage';
+import { DashboardPage } from './pages/DashboardPage';
+
+function RouterSwitch() {
+  const { pathname } = useLocation();
+
+  const renderCurrentPage = () => {
+    // Detail offer page: /offres/:id
+    if (pathname.startsWith('/offres/') && pathname !== '/offres' && pathname !== '/offres/') {
+      return <OfferDetailPage />;
+    }
+
+    switch (pathname) {
+      case '/inscription':
+        return <RegisterPage />;
+      case '/connexion':
+        return <LoginPage />;
+      case '/offres':
+      case '/offres/':
+        return <OffersListPage />;
+      case '/publier':
+        return <PublishOfferPage />;
+      case '/tableau-de-bord':
+        return <DashboardPage />;
+      case '/':
+      default:
+        return <HomePage />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-creme text-encre font-inter flex flex-col selection:bg-or-ambre selection:text-vert-profond overflow-x-hidden">
+      {/* Universal Fixed Navigation Bar */}
+      <AppNavbar />
+
+      {/* Dynamic Page Content */}
+      <main className="flex-1">
+        {renderCurrentPage()}
+      </main>
+
+      {/* Universal Footer */}
+      <Footer />
+    </div>
+  );
+}
 
 export function App() {
   return (
-    <div className="min-h-screen bg-creme text-encre font-inter flex flex-col selection:bg-or-ambre selection:text-vert-profond overflow-x-hidden">
-      
-      {/* 1. Barre de navigation (fixe en haut) */}
-      <Navbar />
-
-      {/* Main Content Sections */}
-      <main className="flex-1">
-        {/* 2. Section Héro */}
-        <HeroSection />
-
-        {/* 3. Section "Comment ça marche" */}
-        <HowItWorksSection />
-
-        {/* 4. Section "Ce qu'on couvre" */}
-        <CoverageSection />
-
-        {/* 5. Bande "Publier une offre" */}
-        <PublishBanner />
-
-        {/* 6. CTA final */}
-        <FinalCTA />
-      </main>
-
-      {/* 7. Pied de page */}
-      <Footer />
-
-    </div>
+    <RouterProvider>
+      <AuthProvider>
+        <RouterSwitch />
+      </AuthProvider>
+    </RouterProvider>
   );
 }
 

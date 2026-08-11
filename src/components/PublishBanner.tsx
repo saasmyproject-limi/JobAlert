@@ -1,5 +1,6 @@
 import React from 'react';
 import { PlusCircle, ArrowRight } from 'lucide-react';
+import { Link } from '../router/Router';
 
 export const PublishBanner: React.FC = () => {
   return (
@@ -26,13 +27,13 @@ export const PublishBanner: React.FC = () => {
 
         {/* Right Column: CTA Button in Vert Profond */}
         <div className="shrink-0">
-          <a
-            href="#form-publier"
+          <Link
+            to="/publier"
             className="inline-flex items-center gap-3 px-8 py-5 rounded-full bg-vert-profond hover:bg-vert-moyen text-creme font-sora font-extrabold text-base sm:text-lg transition-all duration-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 text-center"
           >
             <span>Publier une offre</span>
             <ArrowRight className="w-5 h-5 text-or-clair" />
-          </a>
+          </Link>
         </div>
 
       </div>
