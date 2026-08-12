@@ -16,6 +16,8 @@ interface AuthContextType {
   applications: JobApplication[];
   jobsList: JobOffer[];
   login: (email: string, pass: string) => Promise<AuthResult>;
+  loginWithGoogle: () => Promise<AuthResult>;
+  loginWithWhatsApp: (phone: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
   register: (profileData: {
     name: string;
@@ -75,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data) {
         setUser({
-          name: data.full_name || 'Utilisateur JobAlert',
+          name: data.full_name || 'Utilisateur ESSOR',
           email: data.email || userEmail,
           phone: data.phone_whatsapp || '',
           domain: data.domain || '',
@@ -155,6 +157,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'Erreur lors de la connexion' };
+    }
+  };
+
+  const loginWithGoogle = async (): Promise<AuthResult> => {
+    try {
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/tableau-de-bord`
+        : undefined;
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+        },
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur lors de la connexion avec Google.' };
+    }
+  };
+
+  const loginWithWhatsApp = async (phone: string): Promise<AuthResult> => {
+    try {
+      if (!phone.trim()) {
+        return { success: false, error: 'Veuillez saisir votre numéro WhatsApp (ex: +237699000000).' };
+      }
+
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: phone,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur lors de la connexion avec WhatsApp.' };
     }
   };
 
@@ -317,6 +360,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         applications,
         jobsList,
         login,
+        loginWithGoogle,
+        loginWithWhatsApp,
         logout,
         register,
         updateProfile,
