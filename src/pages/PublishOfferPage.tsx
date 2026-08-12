@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { Link } from '../router/Router';
-import { JobType, JobOffer } from '../types';
-import { PlusCircle, CheckCircle2, MessageSquare, ArrowRight, Building2, MapPin, Sparkles, Send } from 'lucide-react';
+import { JobType } from '../types';
+import { PlusCircle, CheckCircle2, MessageSquare, ArrowRight, Building2, MapPin, Sparkles, Send, AlertCircle } from 'lucide-react';
 
 export const PublishOfferPage: React.FC = () => {
-  const { addPublishedJob } = useAuth();
+  const { session } = useAuth();
 
   // Form state
   const [title, setTitle] = useState('');
@@ -18,40 +19,52 @@ export const PublishOfferPage: React.FC = () => {
   const [deadline, setDeadline] = useState('30 Septembre 2026');
   const [salary, setSalary] = useState('');
 
-  // Confirmation state
+  // Submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
 
-    const typeLabels: Record<JobType, string> = {
-      'emploi-formel': 'Emploi Formel (CDI/CDD)',
-      'emploi-informel': 'Emploi Informel / Mission',
-      'stage': 'Stage Académique / Pro',
-      'bourse': 'Bourse d\'études',
-    };
+    if (!title.trim() || !organization.trim() || !description.trim()) {
+      setErrorMessage('Veuillez remplir tous les champs obligatoires (*).');
+      return;
+    }
 
-    const newJob: JobOffer = {
-      id: `pub-${Date.now()}`,
-      title: title || 'Offre sans titre',
-      organization: organization || 'Entreprise / Particulier',
-      type,
-      typeLabel: typeLabels[type],
-      location,
-      shortDescription: description.slice(0, 140) + '...',
-      fullDescription: description,
-      requirements: ['Profil rigoureux et motivé', 'Expérience selon le besoin'],
-      deadline: deadline || 'Dans 30 jours',
-      matchPercentage: 94,
-      category: 'Recrutement Direct',
-      contactWhatsApp: contactWhatsApp || undefined,
-      contactEmail: contactEmail || undefined,
-      salary: salary || undefined,
-      postedDate: 'À l\'instant',
-    };
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('offers').insert({
+        title: title.trim(),
+        organization: organization.trim(),
+        type,
+        location: location.trim(),
+        short_description: description.slice(0, 150) + (description.length > 150 ? '...' : ''),
+        full_description: description.trim(),
+        requirements: ['Candidat motivé et disponible', 'Expérience selon le poste'],
+        deadline: deadline.trim() || 'Non spécifiée',
+        category: 'Offre Employeur / Recrutement',
+        contact_whatsapp: contactWhatsApp.trim() || null,
+        contact_email: contactEmail.trim() || null,
+        salary: salary.trim() || null,
+        is_urgent: false,
+        source: 'manual',
+        moderation_status: 'en_attente',
+        publisher_id: session?.user?.id || null,
+      });
 
-    addPublishedJob(newJob);
-    setIsSubmitted(true);
+      if (error) {
+        throw error;
+      }
+
+      setIsSubmitted(true);
+    } catch (err: any) {
+      console.error('Erreur lors de la publication de l’offre:', err);
+      setErrorMessage(err?.message || 'Erreur lors de la soumission de l’offre.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -82,179 +95,121 @@ export const PublishOfferPage: React.FC = () => {
 
           <div className="space-y-3 max-w-lg mx-auto">
             <span className="px-3 py-1 rounded-full bg-or-ambre/20 text-vert-profond text-xs font-sora font-bold">
-              Soumission enregistrée
+              Enregistrée dans Supabase
             </span>
             <h2 className="text-2xl sm:text-3xl font-sora font-extrabold text-vert-profond">
               Votre offre est en attente de modération
             </h2>
             <p className="text-sm text-encre/80 leading-relaxed">
-              Merci ! Notre équipe contrôle la conformité des annonces sous 2 heures. Une fois validée, votre offre sera diffusée aux candidats correspondant par alerte WhatsApp.
+              Merci ! L'offre a bien été enregistrée dans la table <code className="bg-sauge/30 px-2 py-0.5 rounded text-vert-profond">offers</code> avec le statut <span className="font-bold">"en_attente"</span>.
             </p>
           </div>
 
           <div className="p-4 rounded-2xl bg-creme border border-sauge/40 max-w-md mx-auto text-left text-xs space-y-2">
             <div className="flex items-center gap-2 font-bold text-vert-profond">
               <MessageSquare className="w-4 h-4 text-whatsapp fill-whatsapp" />
-              <span>Diffusion WhatsApp prévue</span>
+              <span>Diffusion WhatsApp prévue après modération</span>
             </div>
             <p className="text-encre/70">
-              Un rapport de diffusion et les candidatures reçues vous seront envoyés sur vos coordonnées de contact.
+              Dès qu'un modérateur valide votre offre, elle basculera au statut "publiée" et apparaîtra instantanément dans le flux public.
             </p>
           </div>
 
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              to="/offres"
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-vert-profond text-creme font-sora font-bold text-sm hover:bg-vert-moyen transition-all w-full sm:w-auto"
-            >
-              <span>Voir la liste des offres</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
             <button
               onClick={() => {
                 setIsSubmitted(false);
                 setTitle('');
                 setDescription('');
               }}
-              className="px-6 py-3.5 rounded-full border border-sauge text-vert-profond font-bold text-xs hover:bg-sauge/20 transition-all w-full sm:w-auto"
+              className="px-6 py-3 rounded-full bg-vert-profond text-creme font-sora font-bold text-xs hover:bg-vert-moyen transition-all"
             >
               Publier une autre offre
             </button>
+
+            <Link
+              to="/offres"
+              className="px-6 py-3 rounded-full border border-vert-profond text-vert-profond font-sora font-bold text-xs hover:bg-vert-profond/10 transition-all"
+            >
+              Voir la liste des offres
+            </Link>
           </div>
 
         </div>
       ) : (
-        /* Recruiter Form */
+        /* Form Card */
         <div className="bg-white rounded-[32px] p-6 sm:p-10 border border-sauge/40 shadow-subtle space-y-6">
           
+          {errorMessage && (
+            <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-3">
+              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             
-            {/* Titre de l'offre */}
+            {/* Title */}
             <div>
               <label className="block text-sm font-semibold text-vert-profond mb-1.5">
-                Titre de l'offre <span className="text-red-500">*</span>
+                Titre de l'offre *
               </label>
               <input
                 type="text"
                 required
-                placeholder="ex: Plombier qualifié pour chantier R+4 / Développeur React / Stage RH..."
+                placeholder="ex: Concours d'entrée, Développeur Web, Plombier BTP..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
               />
             </div>
 
-            {/* Organisation / Nom du recruteur */}
-            <div>
-              <label className="block text-sm font-semibold text-vert-profond mb-1.5">
-                Nom de l'entreprise ou du recruteur <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="ex: Brasseries du Cameroun / Cabinet RH / Particulier M. Talla..."
-                value={organization}
-                onChange={(e) => setOrganization(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
-              />
-            </div>
-
-            {/* Type & Localisation */}
+            {/* Organization & Type */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-vert-profond mb-1.5">
-                  Type d'offre <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value as JobType)}
-                  className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium bg-white"
-                >
-                  <option value="emploi-formel">Emploi Formel (CDI / CDD)</option>
-                  <option value="emploi-informel">Emploi Informel / Mission / Prestation</option>
-                  <option value="stage">Stage Académique / Professionnel</option>
-                  <option value="bourse">Bourse d'études / Formation</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-vert-profond mb-1.5">
-                  Localisation (Ville / Quartier) <span className="text-red-500">*</span>
+                  Entreprise / Organisation *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="ex: Douala - Akwa, Yaoundé - Bastos, Kribi..."
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="ex: Orange Cameroun, Ministère, Particulier..."
+                  value={organization}
+                  onChange={(e) => setOrganization(e.target.value)}
                   className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
                 />
               </div>
-            </div>
 
-            {/* Description détaillée */}
-            <div>
-              <label className="block text-sm font-semibold text-vert-profond mb-1.5">
-                Description détaillée du besoin <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                required
-                rows={5}
-                placeholder="Décrivez les tâches, le profil recherché, les conditions de travail..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
-              />
-            </div>
-
-            {/* Coordonnées de contact */}
-            <div className="p-4 rounded-2xl bg-creme border border-sauge/40 space-y-4">
-              <h3 className="font-sora font-extrabold text-sm text-vert-profond">
-                Coordonnées de contact pour recevoir les candidatures
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-vert-profond mb-1">
-                    Numéro WhatsApp (recommandé)
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="+237 6XX XX XX XX"
-                    value={contactWhatsApp}
-                    onChange={(e) => setContactWhatsApp(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-sauge/60 bg-white text-encre text-xs font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-vert-profond mb-1">
-                    Email de contact
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="recrutement@entreprise.cm"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-sauge/60 bg-white text-encre text-xs font-medium"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-vert-profond mb-1.5">
+                  Type d'opportunité *
+                </label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value as JobType)}
+                  className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-semibold transition-all bg-white"
+                >
+                  <option value="emploi-formel">Emploi Formel (Concours / CDI)</option>
+                  <option value="emploi-informel">Emploi Informel / Prestation</option>
+                  <option value="stage">Stage Académique / Pro</option>
+                  <option value="bourse">Bourse d'études</option>
+                </select>
               </div>
             </div>
 
-            {/* Optional Salary & Deadline */}
+            {/* Location & Deadline */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-vert-profond mb-1.5">
-                  Rémunération / Budget (Optionnel)
+                  Localisation / Ville *
                 </label>
                 <input
                   type="text"
-                  placeholder="ex: 150 000 FCFA / mois ou 10 000 FCFA / jour"
-                  value={salary}
-                  onChange={(e) => setSalary(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond outline-none text-encre text-sm"
+                  required
+                  placeholder="ex: Douala, Yaoundé, Tout le Cameroun..."
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
                 />
               </div>
 
@@ -264,27 +219,82 @@ export const PublishOfferPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="ex: 30 Septembre 2026"
+                  placeholder="ex: 30 Octobre 2026"
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond outline-none text-encre text-sm"
+                  className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-semibold text-vert-profond mb-1.5">
+                Description détaillée & Conditions *
+              </label>
+              <textarea
+                rows={5}
+                required
+                placeholder="Décrivez les missions, le profil recherché, les conditions de candidature..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
+              ></textarea>
+            </div>
+
+            {/* Contacts & Salary */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-vert-profond mb-1.5">
+                  WhatsApp Contact
+                </label>
+                <input
+                  type="text"
+                  placeholder="ex: +237 699 00 11 22"
+                  value={contactWhatsApp}
+                  onChange={(e) => setContactWhatsApp(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-vert-profond mb-1.5">
+                  Email de réception
+                </label>
+                <input
+                  type="email"
+                  placeholder="recrutement@entreprise.cm"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-vert-profond mb-1.5">
+                  Rémunération / Salaire
+                </label>
+                <input
+                  type="text"
+                  placeholder="ex: 150 000 FCFA / mois"
+                  value={salary}
+                  onChange={(e) => setSalary(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
                 />
               </div>
             </div>
 
             {/* Submit Button */}
-            <div className="pt-4 border-t border-sauge/30">
-              <button
-                type="submit"
-                className="w-full py-4 rounded-full bg-vert-profond hover:bg-vert-moyen text-creme font-sora font-extrabold text-base transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
-              >
-                <Send className="w-5 h-5 text-or-clair" />
-                <span>Publier l'offre</span>
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-4 rounded-full bg-vert-profond hover:bg-vert-moyen text-creme font-sora font-extrabold text-base transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <Send className="w-5 h-5 text-or-clair" />
+              <span>{isSubmitting ? 'Publication dans Supabase...' : 'Publier l\'offre d\'emploi'}</span>
+            </button>
 
           </form>
-
         </div>
       )}
 

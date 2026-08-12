@@ -1,109 +1,274 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, JobApplication, JobOffer } from '../types';
-import { MOCK_JOBS } from '../data/mockJobs';
+import { supabase } from '../lib/supabaseClient';
+import { Session } from '@supabase/supabase-js';
+
+interface AuthResult {
+  success: boolean;
+  error?: string;
+}
 
 interface AuthContextType {
   user: UserProfile;
+  session: Session | null;
+  loading: boolean;
   applications: JobApplication[];
   jobsList: JobOffer[];
-  login: (email: string, pass: string) => void;
-  logout: () => void;
-  register: (profileData: Partial<UserProfile>) => void;
-  updateProfile: (updated: Partial<UserProfile>) => void;
+  login: (email: string, pass: string) => Promise<AuthResult>;
+  logout: () => Promise<void>;
+  register: (profileData: {
+    name: string;
+    email: string;
+    password?: string;
+    phone?: string;
+    domain?: string;
+    education?: string;
+    experience?: string;
+    location?: string;
+    searchTypes?: any[];
+    skills?: string[];
+    cvFileName?: string;
+  }) => Promise<AuthResult>;
+  updateProfile: (updated: Partial<UserProfile>) => Promise<AuthResult>;
   applyToJob: (job: JobOffer) => boolean;
   addPublishedJob: (job: JobOffer) => void;
   hasApplied: (jobId: string) => boolean;
+  refreshProfile: () => Promise<void>;
 }
 
-const initialProfile: UserProfile = {
-  name: 'Jean-Marc Nkoa',
-  email: 'jeanmarc.nkoa@gmail.com',
-  phone: '+237 699 00 11 22',
-  domain: 'Informatique & Technologies',
-  education: 'Master 2',
-  experience: '3-5 ans',
-  location: 'Douala',
-  searchTypes: ['emploi-formel', 'stage', 'bourse'],
-  skills: ['React', 'TypeScript', 'Gestion de projet', 'Analyse de données'],
-  cvFileName: 'CV_JeanMarc_Nkoa_2026.pdf',
-  isLoggedIn: true,
+const defaultUserProfile: UserProfile = {
+  name: '',
+  email: '',
+  phone: '',
+  domain: '',
+  education: '',
+  experience: '',
+  location: '',
+  searchTypes: [],
+  skills: [],
+  cvFileName: '',
+  isLoggedIn: false,
 };
-
-const initialApplications: JobApplication[] = [
-  {
-    id: 'app-1',
-    jobId: 'dev-fullstack-douala',
-    jobTitle: 'Développeur Fullstack React / Node.js',
-    organization: 'TechKamer Solutions',
-    location: 'Douala - Bonanjo',
-    appliedDate: '10/08/2026',
-    status: 'Envoyée',
-    type: 'emploi-formel',
-  },
-  {
-    id: 'app-2',
-    jobId: 'minfopra-admin-2026',
-    jobTitle: 'Concours Direct MINFOPRA - 45 Administrateurs Civils',
-    organization: 'MINFOPRA',
-    location: 'Yaoundé',
-    appliedDate: '08/08/2026',
-    status: 'En cours d\'examen',
-    type: 'emploi-formel',
-  },
-  {
-    id: 'app-3',
-    jobId: 'stage-marketing-orange',
-    jobTitle: 'Stage Académique & Pro en Marketing Digital',
-    organization: 'Orange Cameroun',
-    location: 'Douala',
-    appliedDate: '02/08/2026',
-    status: 'Entretien programmé',
-    type: 'stage',
-  }
-];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile>(initialProfile);
-  const [applications, setApplications] = useState<JobApplication[]>(initialApplications);
-  const [jobsList, setJobsList] = useState<JobOffer[]>(MOCK_JOBS);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<UserProfile>(defaultUserProfile);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [jobsList, setJobsList] = useState<JobOffer[]>([]);
 
-  const login = (email: string, _pass: string) => {
-    setUser((prev) => ({
-      ...prev,
-      email: email || prev.email,
-      isLoggedIn: true,
-    }));
+  // Charge le profil utilisateur depuis Supabase
+  const loadUserProfile = async (userId: string, userEmail: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Erreur chargement profil Supabase:', error);
+      }
+
+      if (data) {
+        setUser({
+          name: data.full_name || 'Utilisateur JobAlert',
+          email: data.email || userEmail,
+          phone: data.phone_whatsapp || '',
+          domain: data.domain || '',
+          education: data.education_level || '',
+          experience: data.experience_years || '',
+          location: data.location || '',
+          searchTypes: data.search_types || [],
+          skills: data.skills || [],
+          cvFileName: data.cv_url || '',
+          isLoggedIn: true,
+        });
+      } else {
+        // Fallback si le profil n'a pas encore été créé dans public.profiles
+        setUser({
+          ...defaultUserProfile,
+          email: userEmail,
+          isLoggedIn: true,
+        });
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement du profil:', err);
+    }
   };
 
-  const logout = () => {
-    setUser((prev) => ({ ...prev, isLoggedIn: false }));
-  };
-
-  const register = (profileData: Partial<UserProfile>) => {
-    setUser({
-      name: profileData.name || 'Candidat JobAlert',
-      email: profileData.email || '',
-      phone: profileData.phone || '',
-      domain: profileData.domain || 'Informatique',
-      education: profileData.education || 'Licence',
-      experience: profileData.experience || '1-3 ans',
-      location: profileData.location || 'Douala',
-      searchTypes: profileData.searchTypes || ['emploi-formel', 'stage'],
-      skills: profileData.skills || [],
-      cvFileName: profileData.cvFileName || 'Mon_CV_JobAlert.pdf',
-      isLoggedIn: true,
+  useEffect(() => {
+    // 1. Obtenir la session initiale
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        loadUserProfile(session.user.id, session.user.email || '');
+      }
+      setLoading(false);
     });
+
+    // 2. Écouter les changements d'état d'authentification (login, logout, token refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      if (session?.user) {
+        await loadUserProfile(session.user.id, session.user.email || '');
+      } else {
+        setUser(defaultUserProfile);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const refreshProfile = async () => {
+    if (session?.user) {
+      await loadUserProfile(session.user.id, session.user.email || '');
+    }
   };
 
-  const updateProfile = (updated: Partial<UserProfile>) => {
-    setUser((prev) => ({ ...prev, ...updated }));
+  const login = async (email: string, pass: string): Promise<AuthResult> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: pass,
+      });
+
+      if (error) {
+        let msg = error.message;
+        if (msg.includes('Invalid login credentials')) {
+          msg = 'Email ou mot de passe incorrect.';
+        }
+        return { success: false, error: msg };
+      }
+
+      if (data.session?.user) {
+        await loadUserProfile(data.session.user.id, data.session.user.email || email);
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur lors de la connexion' };
+    }
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(defaultUserProfile);
+    setSession(null);
+  };
+
+  const register = async (profileData: {
+    name: string;
+    email: string;
+    password?: string;
+    phone?: string;
+    domain?: string;
+    education?: string;
+    experience?: string;
+    location?: string;
+    searchTypes?: any[];
+    skills?: string[];
+    cvFileName?: string;
+  }): Promise<AuthResult> => {
+    try {
+      if (!profileData.password) {
+        return { success: false, error: 'Veuillez saisir un mot de passe.' };
+      }
+
+      // 1. Création de l'utilisateur Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: profileData.email,
+        password: profileData.password,
+        options: {
+          data: {
+            full_name: profileData.name,
+          },
+        },
+      });
+
+      if (authError) {
+        let msg = authError.message;
+        if (msg.includes('User already registered')) {
+          msg = 'Cet email est déjà utilisé par un autre compte.';
+        }
+        return { success: false, error: msg };
+      }
+
+      const userId = authData.user?.id;
+      if (!userId) {
+        return { success: false, error: 'Impossible de créer le compte.' };
+      }
+
+      // 2. Étape 4.1 : Écriture du profil complet dans la table public.profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          email: profileData.email,
+          full_name: profileData.name,
+          phone_whatsapp: profileData.phone || '',
+          domain: profileData.domain || '',
+          education_level: profileData.education || '',
+          experience_years: profileData.experience || '',
+          location: profileData.location || '',
+          search_types: profileData.searchTypes || [],
+          skills: profileData.skills || [],
+          cv_url: profileData.cvFileName || '',
+          updated_at: new Date().toISOString(),
+        });
+
+      if (profileError) {
+        console.error('Erreur insertion profil public:', profileError);
+      }
+
+      await loadUserProfile(userId, profileData.email);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur lors de l’inscription' };
+    }
+  };
+
+  const updateProfile = async (updated: Partial<UserProfile>): Promise<AuthResult> => {
+    if (!session?.user) {
+      return { success: false, error: 'Vous devez être connecté.' };
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: updated.name,
+          phone_whatsapp: updated.phone,
+          domain: updated.domain,
+          education_level: updated.education,
+          experience_years: updated.experience,
+          location: updated.location,
+          search_types: updated.searchTypes,
+          skills: updated.skills,
+          cv_url: updated.cvFileName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.user.id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      setUser((prev) => ({ ...prev, ...updated }));
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur mise à jour profil' };
+    }
   };
 
   const applyToJob = (job: JobOffer): boolean => {
     if (applications.some((app) => app.jobId === job.id)) {
-      return false; // Already applied
+      return false;
     }
     const newApp: JobApplication = {
       id: `app-${Date.now()}`,
@@ -131,6 +296,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
+        session,
+        loading,
         applications,
         jobsList,
         login,
@@ -140,6 +307,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         applyToJob,
         addPublishedJob,
         hasApplied,
+        refreshProfile,
       }}
     >
       {children}

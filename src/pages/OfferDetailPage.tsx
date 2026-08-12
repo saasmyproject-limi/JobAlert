@@ -1,25 +1,118 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation } from '../router/Router';
+import { JobOffer, JobType } from '../types';
 import { Building2, MapPin, Calendar, CheckCircle2, ExternalLink, ArrowLeft, Send, Sparkles, MessageSquare, Share2, AlertCircle } from 'lucide-react';
 
 export const OfferDetailPage: React.FC = () => {
   const { pathname } = useLocation();
-  const { jobsList, applyToJob, hasApplied } = useAuth();
+  const { applyToJob, hasApplied } = useAuth();
 
-  // Extract ID from pathname (e.g. /offres/minfopra-admin-2026)
-  const id = pathname.replace('/offres/', '');
-  const job = jobsList.find((j) => j.id === id) || jobsList[0];
+  // Extract ID from pathname (e.g. /offres/UUID)
+  const id = pathname.replace('/offres/', '').replace('/', '');
 
-  const alreadyApplied = hasApplied(job.id);
+  const [job, setJob] = useState<JobOffer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const [appliedSuccess, setAppliedSuccess] = useState(alreadyApplied);
+  const [appliedSuccess, setAppliedSuccess] = useState(false);
+
+  useEffect(() => {
+    const fetchOfferDetail = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error: fetchErr } = await supabase
+          .from('offers')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (fetchErr || !data) {
+          throw fetchErr || new Error('Offre non trouvée');
+        }
+
+        const mappedJob: JobOffer = {
+          id: data.id,
+          title: data.title,
+          organization: data.organization,
+          type: data.type as JobType,
+          typeLabel:
+            data.type === 'emploi-formel'
+              ? 'Emploi Formel (Concours)'
+              : data.type === 'emploi-informel'
+              ? 'Emploi Informel / Prestation'
+              : data.type === 'stage'
+              ? 'Stage Académique / Pro'
+              : 'Bourse d\'études',
+          location: data.location,
+          shortDescription: data.short_description,
+          fullDescription: data.full_description,
+          requirements: data.requirements || [],
+          deadline: data.deadline || 'Non spécifiée',
+          matchPercentage: 95,
+          category: data.category || 'Général',
+          externalUrl: data.external_url || undefined,
+          contactWhatsApp: data.contact_whatsapp || undefined,
+          contactEmail: data.contact_email || undefined,
+          salary: data.salary || undefined,
+          postedDate: data.created_at
+            ? new Date(data.created_at).toLocaleDateString('fr-FR')
+            : 'Récemment',
+          isUrgent: data.is_urgent || false,
+        };
+
+        setJob(mappedJob);
+        setAppliedSuccess(hasApplied(mappedJob.id));
+      } catch (err: any) {
+        console.error('Erreur chargement offre Supabase:', err);
+        setError('Impossible de trouver l’offre demandée.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchOfferDetail();
+    }
+  }, [id]);
 
   const handleApply = () => {
-    applyToJob(job);
-    setAppliedSuccess(true);
-    setShowApplyModal(true);
+    if (job) {
+      applyToJob(job);
+      setAppliedSuccess(true);
+      setShowApplyModal(true);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="pt-28 pb-24 px-4 max-w-4xl mx-auto text-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-vert-profond border-t-transparent mx-auto"></div>
+        <p className="text-sm font-semibold text-encre/70">Chargement des détails de l'offre depuis Supabase...</p>
+      </div>
+    );
+  }
+
+  if (error || !job) {
+    return (
+      <div className="pt-28 pb-24 px-4 max-w-4xl mx-auto text-center space-y-6">
+        <div className="p-8 bg-white rounded-3xl border border-sauge/40 shadow-subtle space-y-4">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
+          <h2 className="text-2xl font-sora font-bold text-vert-profond">Offre introuvable</h2>
+          <p className="text-sm text-encre/70">L'offre d'emploi demandée n'existe pas ou a été retirée.</p>
+          <Link
+            to="/offres"
+            className="inline-block px-6 py-3 rounded-full bg-vert-profond text-creme font-sora font-bold text-xs"
+          >
+            Retourner à la liste des offres
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-28 pb-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-6">
@@ -84,7 +177,7 @@ export const OfferDetailPage: React.FC = () => {
             {appliedSuccess ? (
               <div className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-whatsapp/20 text-vert-profond font-sora font-extrabold text-sm border border-whatsapp/40">
                 <CheckCircle2 className="w-5 h-5 text-whatsapp" />
-                <span>Candidature envoyée</span>
+                <span>Candidature enregistrée</span>
               </div>
             ) : (
               <button
@@ -102,14 +195,22 @@ export const OfferDetailPage: React.FC = () => {
                 href={job.externalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert(`Redirection vers la source officielle (${job.externalUrl})`);
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border-2 border-sauge text-vert-profond hover:bg-sauge/20 font-sora font-bold text-xs sm:text-sm transition-all"
+                className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full border border-sauge/60 text-vert-profond font-sora font-bold text-xs hover:bg-sauge/20 transition-all"
               >
-                <span>Voir plus d'infos (Source externe)</span>
-                <ExternalLink className="w-4 h-4" />
+                <span>Site officiel</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+
+            {job.contactWhatsApp && (
+              <a
+                href={`https://wa.me/${job.contactWhatsApp.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-whatsapp/10 border border-whatsapp/40 text-vert-profond font-sora font-bold text-xs hover:bg-whatsapp/20 transition-all"
+              >
+                <MessageSquare className="w-4 h-4 text-whatsapp fill-whatsapp" />
+                <span>Contact Direct WhatsApp</span>
               </a>
             )}
 
@@ -120,43 +221,45 @@ export const OfferDetailPage: React.FC = () => {
               if (navigator.share) {
                 navigator.share({ title: job.title, url: window.location.href });
               } else {
-                alert('Lien de l\'offre copié dans le presse-papier !');
+                navigator.clipboard.writeText(window.location.href);
+                alert('Lien de l’offre copié !');
               }
             }}
-            className="p-3 rounded-full text-encre/60 hover:text-vert-profond hover:bg-sauge/20 transition-colors"
-            title="Partager l'offre"
+            className="p-3 rounded-full border border-sauge/40 text-encre/60 hover:text-vert-profond hover:bg-sauge/20 transition-all"
+            title="Partager cette offre"
           >
-            <Share2 className="w-5 h-5" />
+            <Share2 className="w-4 h-4" />
           </button>
         </div>
 
       </div>
 
-      {/* Detailed Content */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+      {/* Details Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Left Column: Full Description & Requirements */}
-        <div className="md:col-span-8 bg-white rounded-[32px] p-6 sm:p-8 border border-sauge/40 shadow-subtle space-y-6">
+        {/* Main Content (2 cols) */}
+        <div className="md:col-span-2 space-y-6">
           
-          <div>
-            <h3 className="font-sora font-extrabold text-xl text-vert-profond mb-3">
-              Description complète de l'offre
-            </h3>
-            <div className="text-sm text-encre/80 font-normal leading-relaxed whitespace-pre-line space-y-2">
+          {/* Full Description */}
+          <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-sauge/40 shadow-subtle space-y-4">
+            <h2 className="text-xl font-sora font-extrabold text-vert-profond">
+              Description de l'opportunité
+            </h2>
+            <div className="prose prose-sm text-encre/80 leading-relaxed whitespace-pre-line font-medium">
               {job.fullDescription}
             </div>
           </div>
 
           {/* Requirements */}
           {job.requirements && job.requirements.length > 0 && (
-            <div className="pt-4 border-t border-sauge/30">
-              <h3 className="font-sora font-extrabold text-lg text-vert-profond mb-3">
-                Critères et compétences requis
-              </h3>
+            <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-sauge/40 shadow-subtle space-y-4">
+              <h2 className="text-xl font-sora font-extrabold text-vert-profond">
+                Conditions & Profil recherché
+              </h2>
               <ul className="space-y-2.5">
                 {job.requirements.map((req, idx) => (
-                  <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-encre/80 font-medium">
-                    <CheckCircle2 className="w-4 h-4 text-vert-moyen shrink-0 mt-0.5" />
+                  <li key={idx} className="flex items-start gap-3 text-sm text-encre/80 font-medium">
+                    <CheckCircle2 className="w-4 h-4 text-vert-moyen flex-shrink-0 mt-0.5" />
                     <span>{req}</span>
                   </li>
                 ))}
@@ -166,104 +269,59 @@ export const OfferDetailPage: React.FC = () => {
 
         </div>
 
-        {/* Right Column: Info Card */}
-        <div className="md:col-span-4 space-y-4">
-          
-          <div className="bg-creme rounded-[28px] p-6 border border-sauge/40 shadow-subtle space-y-4">
-            <h4 className="font-sora font-bold text-sm text-vert-profond uppercase tracking-wider">
-              Aperçu de l'offre
-            </h4>
+        {/* Sidebar Info (1 col) */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-[28px] p-6 border border-sauge/40 shadow-subtle space-y-4">
+            <h3 className="text-base font-sora font-extrabold text-vert-profond border-b border-sauge/30 pb-3">
+              Informations clés
+            </h3>
 
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between py-1 border-b border-sauge/30">
-                <span className="text-encre/60">Organisme</span>
-                <span className="font-bold text-vert-profond">{job.organization}</span>
+            <div className="space-y-3.5 text-xs font-semibold text-encre/80">
+              <div>
+                <span className="text-encre/50 block font-normal">Catégorie :</span>
+                <span className="text-sm font-bold text-vert-profond">{job.category}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-sauge/30">
-                <span className="text-encre/60">Catégorie</span>
-                <span className="font-bold text-vert-profond">{job.category}</span>
-              </div>
+
               {job.salary && (
-                <div className="flex justify-between py-1 border-b border-sauge/30">
-                  <span className="text-encre/60">Rémunération</span>
-                  <span className="font-bold text-vert-moyen">{job.salary}</span>
+                <div>
+                  <span className="text-encre/50 block font-normal">Rémunération / Grille :</span>
+                  <span className="text-sm font-bold text-or-ambre">{job.salary}</span>
                 </div>
               )}
-              <div className="flex justify-between py-1 border-b border-sauge/30">
-                <span className="text-encre/60">Publication</span>
-                <span className="font-semibold text-encre/80">{job.postedDate}</span>
+
+              <div>
+                <span className="text-encre/50 block font-normal">Publiée le :</span>
+                <span className="text-sm font-bold text-encre/90">{job.postedDate}</span>
               </div>
             </div>
-
-            {/* WhatsApp notification teaser */}
-            <div className="p-3.5 rounded-2xl bg-white border border-whatsapp/40 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-vert-profond">
-                <MessageSquare className="w-4 h-4 text-whatsapp fill-whatsapp" />
-                <span>Alerte WhatsApp JobAlert</span>
-              </div>
-              <p className="text-[11px] text-encre/70 leading-snug">
-                Cette offre a été transmise aux candidats inscrits ayant un profil correspondant à {job.matchPercentage}%.
-              </p>
-            </div>
-
           </div>
-
-          <div className="bg-white rounded-[28px] p-6 border border-sauge/40 shadow-subtle text-center space-y-3">
-            <AlertCircle className="w-6 h-6 text-or-ambre mx-auto" />
-            <h4 className="font-sora font-bold text-xs text-vert-profond">
-              Conseil aux candidats
-            </h4>
-            <p className="text-[11px] text-encre/70 leading-relaxed">
-              JobAlert ne demande jamais d'argent pour postuler à une offre d'emploi ou un concours public.
-            </p>
-          </div>
-
         </div>
 
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Success Modal */}
       {showApplyModal && (
-        <div className="fixed inset-0 z-50 bg-encre/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-[32px] max-w-md w-full p-6 sm:p-8 space-y-5 text-center shadow-2xl animate-scaleIn border border-sauge">
+        <div className="fixed inset-0 bg-vert-profond/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[32px] p-6 sm:p-8 max-w-md w-full border border-sauge shadow-2xl text-center space-y-5 animate-in fade-in zoom-in duration-200">
             <div className="w-16 h-16 rounded-full bg-whatsapp/20 text-whatsapp flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-
+            
             <div className="space-y-2">
               <h3 className="text-2xl font-sora font-extrabold text-vert-profond">
                 Candidature transmise !
               </h3>
-              <p className="text-xs text-encre/80 leading-relaxed">
-                Ta candidature pour <strong className="text-vert-profond">{job.title}</strong> a été enregistrée avec succès.
+              <p className="text-sm text-encre/70">
+                Votre profil et vos coordonnées ont été enregistrés pour cette opportunité. Vous recevrez le suivi directement sur votre WhatsApp.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-creme border border-sauge/40 text-left text-xs space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-vert-profond">
-                <MessageSquare className="w-3.5 h-3.5 text-whatsapp fill-whatsapp" />
-                <span>Suivi sur WhatsApp</span>
-              </div>
-              <p className="text-encre/70">
-                Vous recevrez la confirmation et les mises à jour sur votre numéro WhatsApp.
-              </p>
-            </div>
-
-            <div className="pt-2 flex flex-col gap-2">
-              <Link
-                to="/tableau-de-bord"
-                onClick={() => setShowApplyModal(false)}
-                className="py-3 rounded-full bg-vert-profond text-creme font-sora font-bold text-xs hover:bg-vert-moyen transition-all"
-              >
-                Voir dans mon Tableau de bord
-              </Link>
-              <button
-                onClick={() => setShowApplyModal(false)}
-                className="py-2.5 text-xs text-encre/60 hover:text-encre font-bold"
-              >
-                Fermer
-              </button>
-            </div>
+            <button
+              onClick={() => setShowApplyModal(false)}
+              className="w-full py-3.5 rounded-full bg-vert-profond text-creme font-sora font-extrabold text-sm hover:bg-vert-moyen transition-all"
+            >
+              Compris, merci
+            </button>
           </div>
         </div>
       )}

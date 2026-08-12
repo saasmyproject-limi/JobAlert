@@ -1,25 +1,36 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from '../router/Router';
-import { LogIn, ArrowRight, Eye, EyeOff, Sparkles, MessageSquare } from 'lucide-react';
+import { LogIn, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('jeanmarc.nkoa@gmail.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, password);
-    navigate('/tableau-de-bord');
-  };
+    setErrorMessage(null);
 
-  const handleQuickDemoLogin = () => {
-    login('jeanmarc.nkoa@gmail.com', 'password123');
-    navigate('/tableau-de-bord');
+    if (!email.trim() || !password.trim()) {
+      setErrorMessage('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await login(email, password);
+    setIsSubmitting(false);
+
+    if (result.success) {
+      navigate('/tableau-de-bord');
+    } else {
+      setErrorMessage(result.error || 'Identifiants incorrects ou problème de connexion.');
+    }
   };
 
   return (
@@ -43,6 +54,14 @@ export const LoginPage: React.FC = () => {
       {/* Login Form Card */}
       <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-sauge/40 shadow-subtle space-y-6">
         
+        {/* Error Banner */}
+        {errorMessage && (
+          <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-3">
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           
           {/* Email */}
@@ -53,7 +72,7 @@ export const LoginPage: React.FC = () => {
             <input
               type="email"
               required
-              placeholder="ex: jeanmarc@gmail.com"
+              placeholder="ex: candidat@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
@@ -66,9 +85,6 @@ export const LoginPage: React.FC = () => {
               <label className="block text-sm font-semibold text-vert-profond">
                 Mot de passe
               </label>
-              <a href="#" onClick={(e) => { e.preventDefault(); alert("Un lien de réinitialisation vous sera envoyé sur WhatsApp."); }} className="text-xs text-encre/60 hover:text-vert-profond font-semibold">
-                Oublié ?
-              </a>
             </div>
 
             <div className="relative">
@@ -93,29 +109,14 @@ export const LoginPage: React.FC = () => {
           {/* Submit button */}
           <button
             type="submit"
-            className="w-full py-4 rounded-full bg-vert-profond hover:bg-vert-moyen text-creme font-sora font-extrabold text-base transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+            disabled={isSubmitting}
+            className="w-full py-4 rounded-full bg-vert-profond hover:bg-vert-moyen text-creme font-sora font-extrabold text-base transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <span>Se connecter</span>
+            <span>{isSubmitting ? 'Connexion en cours...' : 'Se connecter'}</span>
             <ArrowRight className="w-4 h-4 text-or-clair" />
           </button>
 
         </form>
-
-        <div className="relative flex py-2 items-center">
-          <div className="flex-grow border-t border-sauge/40"></div>
-          <span className="flex-shrink mx-4 text-xs font-bold text-encre/40 uppercase">Ou</span>
-          <div className="flex-grow border-t border-sauge/40"></div>
-        </div>
-
-        {/* Quick Demo Login */}
-        <button
-          type="button"
-          onClick={handleQuickDemoLogin}
-          className="w-full py-3 rounded-full border border-whatsapp/40 bg-whatsapp/10 text-vert-profond font-sora font-bold text-xs sm:text-sm hover:bg-whatsapp/20 transition-all flex items-center justify-center gap-2"
-        >
-          <MessageSquare className="w-4 h-4 text-whatsapp fill-whatsapp" />
-          <span>Connexion rapide Démo (Jean-Marc Nkoa)</span>
-        </button>
 
         {/* Link to Register */}
         <div className="pt-3 border-t border-sauge/30 text-center space-y-2">

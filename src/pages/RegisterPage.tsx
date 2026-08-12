@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from '../router/Router';
 import { JobType } from '../types';
-import { MessageSquare, Upload, CheckCircle2, FileText, ArrowRight, ShieldCheck, Tag, Sparkles } from 'lucide-react';
+import { MessageSquare, Upload, CheckCircle2, FileText, ArrowRight, ShieldCheck, Tag, Sparkles, AlertCircle } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
@@ -33,6 +33,9 @@ export const RegisterPage: React.FC = () => {
     size: '1.4 MB'
   });
   const [isUploading, setIsUploading] = useState(false);
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleSearchType = (type: JobType) => {
     if (searchTypes.includes(type)) {
@@ -70,12 +73,26 @@ export const RegisterPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    register({
-      name: name || 'Candidat JobAlert',
-      email: email || 'candidat@jobalert.cm',
-      phone: phone || '+237 690 00 11 22',
+    setErrorMessage(null);
+
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setErrorMessage('Veuillez remplir le nom, l’adresse email et le mot de passe.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage('Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await register({
+      name,
+      email,
+      password,
+      phone,
       domain,
       education,
       experience,
@@ -84,7 +101,13 @@ export const RegisterPage: React.FC = () => {
       skills,
       cvFileName: cvFile ? cvFile.name : undefined,
     });
-    navigate('/tableau-de-bord');
+    setIsSubmitting(false);
+
+    if (result.success) {
+      navigate('/tableau-de-bord');
+    } else {
+      setErrorMessage(result.error || 'Erreur lors de la création de votre compte.');
+    }
   };
 
   return (
@@ -108,6 +131,13 @@ export const RegisterPage: React.FC = () => {
       {/* Form Card */}
       <div className="bg-white rounded-[32px] p-6 sm:p-10 border border-sauge/40 shadow-subtle relative overflow-hidden">
         
+        {errorMessage && (
+          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         {/* Step indicator */}
         <div className="flex items-center justify-between border-b border-sauge/30 pb-6 mb-8">
           <div className="flex items-center gap-3">

@@ -1,6 +1,6 @@
 import React from 'react';
-import { RouterProvider, useLocation } from './router/Router';
-import { AuthProvider } from './context/AuthContext';
+import { RouterProvider, useLocation, useNavigate } from './router/Router';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppNavbar } from './components/AppNavbar';
 import { Footer } from './components/Footer';
 
@@ -12,6 +12,31 @@ import { OffersListPage } from './pages/OffersListPage';
 import { OfferDetailPage } from './pages/OfferDetailPage';
 import { PublishOfferPage } from './pages/PublishOfferPage';
 import { DashboardPage } from './pages/DashboardPage';
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!loading && !user.isLoggedIn) {
+      navigate('/connexion');
+    }
+  }, [user.isLoggedIn, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-vert-profond border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!user.isLoggedIn) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
 
 function RouterSwitch() {
   const { pathname } = useLocation();
@@ -31,9 +56,17 @@ function RouterSwitch() {
       case '/offres/':
         return <OffersListPage />;
       case '/publier':
-        return <PublishOfferPage />;
+        return (
+          <ProtectedRoute>
+            <PublishOfferPage />
+          </ProtectedRoute>
+        );
       case '/tableau-de-bord':
-        return <DashboardPage />;
+        return (
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        );
       case '/':
       default:
         return <HomePage />;

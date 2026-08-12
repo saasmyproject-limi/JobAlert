@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { Link } from '../router/Router';
-import { UserProfile, JobOffer } from '../types';
-import { User, Edit3, MessageSquare, Briefcase, FileText, CheckCircle2, Sparkles, MapPin, Award, ArrowRight, Bell, ShieldCheck, Tag, X, Check } from 'lucide-react';
+import { JobOffer, JobType } from '../types';
+import { User, Edit3, MessageSquare, Briefcase, FileText, CheckCircle2, Sparkles, MapPin, Award, ArrowRight, Bell, ShieldCheck, Tag, X, Check, Calendar } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
-  const { user, applications, jobsList, updateProfile } = useAuth();
+  const { user, applications, updateProfile } = useAuth();
 
   // Edit profile modal state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -15,14 +16,65 @@ export const DashboardPage: React.FC = () => {
   const [editEducation, setEditEducation] = useState(user.education);
   const [editExperience, setEditExperience] = useState(user.experience);
   const [editLocation, setEditLocation] = useState(user.location);
-  const [alertsActive, setAlertsActive] = useState(true);
 
-  // Matching offers for the dashboard (top 3-4 sorted by matchPercentage)
-  const matchingOffers = jobsList.slice(0, 4);
+  // Matching offers state (dernières offres publiées depuis Supabase)
+  const [matchingOffers, setMatchingOffers] = useState<JobOffer[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  // TODO: remplacer par le vrai moteur de matching
+  useEffect(() => {
+    const fetchLatestOffers = async () => {
+      setLoadingOffers(true);
+      try {
+        const { data, error } = await supabase
+          .from('offers')
+          .select('*')
+          .eq('moderation_status', 'publiee')
+          .order('created_at', { ascending: false })
+          .limit(4);
+
+        if (error) throw error;
+
+        const mappedJobs: JobOffer[] = (data || []).map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          organization: row.organization,
+          type: row.type as JobType,
+          typeLabel:
+            row.type === 'emploi-formel'
+              ? 'Emploi Formel'
+              : row.type === 'emploi-informel'
+              ? 'Emploi Informel'
+              : row.type === 'stage'
+              ? 'Stage'
+              : 'Bourse',
+          location: row.location,
+          shortDescription: row.short_description,
+          fullDescription: row.full_description,
+          requirements: row.requirements || [],
+          deadline: row.deadline || 'Non spécifiée',
+          matchPercentage: 96,
+          category: row.category || 'Général',
+          postedDate: row.created_at
+            ? new Date(row.created_at).toLocaleDateString('fr-FR')
+            : 'Récemment',
+          isUrgent: row.is_urgent || false,
+        }));
+
+        setMatchingOffers(mappedJobs);
+      } catch (err) {
+        console.error('Erreur chargement offres récentes tableau de bord:', err);
+      } finally {
+        setLoadingOffers(false);
+      }
+    };
+
+    fetchLatestOffers();
+  }, []);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile({
+    await updateProfile({
       name: editName,
       phone: editPhone,
       domain: editDomain,
@@ -62,26 +114,30 @@ export const DashboardPage: React.FC = () => {
           {/* User Info Avatar & Title */}
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-or-ambre text-vert-profond font-sora font-extrabold text-2xl sm:text-3xl flex items-center justify-center shadow-lg border-2 border-or-clair">
-              {user.name.charAt(0)}
+              {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </div>
 
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl sm:text-3xl font-sora font-extrabold text-white">
-                  {user.name}
+                  {user.name || 'Profil Candidate JobAlert'}
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full bg-whatsapp/20 text-whatsapp border border-whatsapp/40 text-[11px] font-bold">
-                  Profil vérifié
+                  Profil vérifié (Supabase)
                 </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-creme/80 font-medium">
                 <span>{user.email}</span>
-                <span>•</span>
-                <span className="flex items-center gap-1 text-whatsapp font-bold">
-                  <MessageSquare className="w-3.5 h-3.5 fill-whatsapp" />
-                  {user.phone}
-                </span>
+                {user.phone && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1 text-whatsapp font-bold">
+                      <MessageSquare className="w-3.5 h-3.5 fill-whatsapp" />
+                      {user.phone}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -105,277 +161,262 @@ export const DashboardPage: React.FC = () => {
 
         </div>
 
-        {/* Profile Attributes Badges Grid */}
-        <div className="pt-6 border-t border-creme/15 grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10 text-xs">
+        {/* Profile Attributes Badges */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-creme/15 relative z-10 text-xs font-semibold">
+          <div className="bg-white/5 rounded-2xl p-3 border border-creme/10">
+            <span className="text-creme/60 block text-[11px]">Domaine :</span>
+            <span className="text-white font-bold truncate block">{user.domain || 'Non renseigné'}</span>
+          </div>
+
+          <div className="bg-white/5 rounded-2xl p-3 border border-creme/10">
+            <span className="text-creme/60 block text-[11px]">Niveau d'études :</span>
+            <span className="text-white font-bold truncate block">{user.education || 'Non renseigné'}</span>
+          </div>
+
+          <div className="bg-white/5 rounded-2xl p-3 border border-creme/10">
+            <span className="text-creme/60 block text-[11px]">Expérience :</span>
+            <span className="text-white font-bold truncate block">{user.experience || 'Non renseignée'}</span>
+          </div>
+
+          <div className="bg-white/5 rounded-2xl p-3 border border-creme/10">
+            <span className="text-creme/60 block text-[11px]">Localisation :</span>
+            <span className="text-white font-bold truncate block">{user.location || 'Non renseignée'}</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Main Grid Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left Column (2 cols) - Matching Jobs & Applications */}
+        <div className="lg:col-span-2 space-y-8">
           
-          <div className="bg-white/10 rounded-2xl p-3.5 backdrop-blur-sm border border-creme/10 space-y-1">
-            <span className="text-creme/60 uppercase tracking-wider text-[10px] font-bold block">Domaine</span>
-            <span className="font-bold text-white block truncate">{user.domain}</span>
-          </div>
-
-          <div className="bg-white/10 rounded-2xl p-3.5 backdrop-blur-sm border border-creme/10 space-y-1">
-            <span className="text-creme/60 uppercase tracking-wider text-[10px] font-bold block">Niveau d'études</span>
-            <span className="font-bold text-white block truncate">{user.education}</span>
-          </div>
-
-          <div className="bg-white/10 rounded-2xl p-3.5 backdrop-blur-sm border border-creme/10 space-y-1">
-            <span className="text-creme/60 uppercase tracking-wider text-[10px] font-bold block">Expérience</span>
-            <span className="font-bold text-white block truncate">{user.experience}</span>
-          </div>
-
-          <div className="bg-white/10 rounded-2xl p-3.5 backdrop-blur-sm border border-creme/10 space-y-1">
-            <span className="text-creme/60 uppercase tracking-wider text-[10px] font-bold block">Ville</span>
-            <span className="font-bold text-white block truncate">{user.location}</span>
-          </div>
-
-        </div>
-
-        {/* WhatsApp Alert Status Control */}
-        <div className="bg-white/10 rounded-2xl p-4 border border-creme/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${alertsActive ? 'bg-whatsapp animate-ping' : 'bg-red-400'}`}></div>
-            <div>
-              <p className="font-bold text-white">
-                Alertes WhatsApp : {alertsActive ? 'ACTIVES (Envois en direct)' : 'EN PAUSE'}
-              </p>
-              <p className="text-creme/70 text-[11px]">
-                Vous recevez les opportunités correspondant à votre profil au +237 {user.phone}
-              </p>
+          {/* Matching Jobs Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-or-ambre fill-or-ambre" />
+                <h2 className="text-xl font-sora font-extrabold text-vert-profond">
+                  Offres récentes pour vous (Supabase)
+                </h2>
+              </div>
+              <Link to="/offres" className="text-xs font-bold text-vert-profond hover:underline flex items-center gap-1">
+                <span>Tout voir</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
-          </div>
 
-          <button
-            onClick={() => setAlertsActive(!alertsActive)}
-            className="px-4 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-bold border border-white/20 transition-all shrink-0"
-          >
-            {alertsActive ? 'Mettre en pause' : 'Réactiver les alertes'}
-          </button>
-        </div>
-
-      </div>
-
-      {/* 2. Section "Offres correspondantes à ton profil" */}
-      <div className="space-y-4">
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-or-ambre fill-or-ambre" />
-            <h2 className="font-sora font-extrabold text-xl text-vert-profond">
-              Offres correspondantes à ton profil
-            </h2>
-          </div>
-
-          <Link
-            to="/offres"
-            className="text-xs font-bold text-vert-profond hover:text-vert-moyen flex items-center gap-1"
-          >
-            <span>Voir toutes les offres</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {/* 3-4 Dummy matching job cards in same style as offer list page */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {matchingOffers.map((job) => (
-            <Link
-              key={job.id}
-              to={`/offres/${job.id}`}
-              className="group bg-white rounded-[24px] p-5 border border-sauge/40 shadow-subtle hover:shadow-lg hover:border-vert-profond/40 transition-all duration-200 flex flex-col justify-between space-y-3 hover:-translate-y-0.5"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-sora font-bold bg-vert-profond/10 text-vert-profond">
-                    {job.typeLabel.split(' ')[0]}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-whatsapp/15 text-vert-profond text-[10px] font-sora font-extrabold border border-whatsapp/30">
-                    {job.matchPercentage}% match
-                  </span>
-                </div>
-
-                <h3 className="font-sora font-bold text-sm text-vert-profond group-hover:text-vert-moyen line-clamp-2 leading-snug">
-                  {job.title}
-                </h3>
-
-                <p className="text-xs text-encre/60 font-medium">
-                  {job.organization} · {job.location}
-                </p>
+            {loadingOffers && (
+              <div className="p-8 text-center bg-white rounded-3xl border border-sauge/40">
+                <div className="animate-spin rounded-full h-8 w-8 border-4 border-vert-profond border-t-transparent mx-auto"></div>
               </div>
+            )}
 
-              <div className="pt-3 border-t border-sauge/30 flex items-center justify-between text-[11px] font-semibold text-vert-profond">
-                <span>Limite : {job.deadline}</span>
-                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-      </div>
-
-      {/* 3. Section "Mes candidatures" */}
-      <div className="space-y-4">
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-vert-moyen" />
-            <h2 className="font-sora font-extrabold text-xl text-vert-profond">
-              Mes candidatures ({applications.length})
-            </h2>
-          </div>
-        </div>
-
-        {applications.length > 0 ? (
-          <div className="bg-white rounded-[28px] border border-sauge/40 shadow-subtle overflow-hidden">
-            
-            {/* Desktop Table View */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-creme/70 border-b border-sauge/30 text-vert-profond font-sora font-bold uppercase tracking-wider text-[11px]">
-                  <tr>
-                    <th className="py-4 px-6">Offre / Postulée</th>
-                    <th className="py-4 px-4">Organisme</th>
-                    <th className="py-4 px-4">Ville</th>
-                    <th className="py-4 px-4">Date de postulation</th>
-                    <th className="py-4 px-6 text-right">Statut</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-sauge/20 font-medium text-encre/80">
-                  {applications.map((app) => (
-                    <tr key={app.id} className="hover:bg-sauge/10 transition-colors">
-                      <td className="py-4 px-6 font-bold text-vert-profond">
-                        <Link to={`/offres/${app.jobId}`} className="hover:underline">
-                          {app.jobTitle}
-                        </Link>
-                      </td>
-                      <td className="py-4 px-4">{app.organization}</td>
-                      <td className="py-4 px-4">{app.location}</td>
-                      <td className="py-4 px-4">{app.appliedDate}</td>
-                      <td className="py-4 px-6 text-right">
-                        <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-sora font-extrabold border ${getStatusBadgeStyle(app.status)}`}>
-                          {app.status}
+            {/* TODO: remplacer par le vrai moteur de matching */}
+            {!loadingOffers && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {matchingOffers.map((job) => (
+                  <div
+                    key={job.id}
+                    className="bg-white rounded-3xl p-5 border border-sauge/40 shadow-subtle hover:shadow-card transition-all space-y-3 flex flex-col justify-between"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="px-3 py-1 rounded-full bg-sauge/30 text-vert-profond text-[11px] font-extrabold">
+                          {job.typeLabel}
                         </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <span className="text-[11px] font-bold text-whatsapp">
+                          {job.matchPercentage}% Match
+                        </span>
+                      </div>
+
+                      <h3 className="text-base font-sora font-extrabold text-vert-profond line-clamp-2">
+                        {job.title}
+                      </h3>
+
+                      <p className="text-xs text-encre/70 line-clamp-2">
+                        {job.shortDescription}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-sauge/30 flex items-center justify-between">
+                      <span className="text-[11px] text-encre/60 font-semibold">{job.location}</span>
+                      <Link
+                        to={`/offres/${job.id}`}
+                        className="px-4 py-2 rounded-full bg-vert-profond text-creme font-sora font-bold text-xs hover:bg-vert-moyen transition-all"
+                      >
+                        Voir
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Applications History */}
+          <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-sauge/40 shadow-subtle space-y-5">
+            <div className="flex items-center justify-between border-b border-sauge/30 pb-4">
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-vert-profond" />
+                <h2 className="text-xl font-sora font-extrabold text-vert-profond">
+                  Mes Candidatures ({applications.length})
+                </h2>
+              </div>
             </div>
 
-            {/* Mobile Card View */}
-            <div className="sm:hidden divide-y divide-sauge/30">
-              {applications.map((app) => (
-                <div key={app.id} className="p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-sora font-extrabold border ${getStatusBadgeStyle(app.status)}`}>
+            {applications.length === 0 ? (
+              <div className="text-center py-8 space-y-3">
+                <FileText className="w-10 h-10 text-sauge/80 mx-auto" />
+                <p className="text-sm font-semibold text-encre/70">
+                  Vous n'avez pas encore postulé à une offre.
+                </p>
+                <Link
+                  to="/offres"
+                  className="inline-block px-5 py-2.5 rounded-full bg-vert-profond text-creme text-xs font-bold font-sora"
+                >
+                  Parcourir les offres
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {applications.map((app) => (
+                  <div
+                    key={app.id}
+                    className="p-4 rounded-2xl border border-sauge/40 bg-creme/50 hover:bg-creme transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-vert-profond">
+                        {app.jobTitle}
+                      </h4>
+                      <div className="flex items-center gap-3 text-xs text-encre/70 font-medium">
+                        <span>{app.organization}</span>
+                        <span>•</span>
+                        <span>{app.location}</span>
+                        <span>•</span>
+                        <span>Postulé le {app.appliedDate}</span>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold border self-start sm:self-center ${getStatusBadgeStyle(
+                        app.status
+                      )}`}
+                    >
                       {app.status}
                     </span>
-                    <span className="text-[10px] text-encre/50">{app.appliedDate}</span>
                   </div>
-                  <h3 className="font-sora font-bold text-sm text-vert-profond">
-                    {app.jobTitle}
-                  </h3>
-                  <p className="text-xs text-encre/70">
-                    {app.organization} · {app.location}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* Right Column (1 col) - WhatsApp Alerts & CV Status */}
+        <div className="space-y-8">
+          
+          {/* WhatsApp Alerts Status Card */}
+          <div className="bg-white rounded-[32px] p-6 border border-sauge/40 shadow-subtle space-y-4">
+            <div className="flex items-center gap-3 border-b border-sauge/30 pb-4">
+              <div className="w-10 h-10 rounded-full bg-whatsapp/15 text-whatsapp flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 fill-whatsapp" />
+              </div>
+              <div>
+                <h3 className="text-base font-sora font-extrabold text-vert-profond">
+                  Alertes WhatsApp
+                </h3>
+                <p className="text-xs text-whatsapp font-bold">Actives & Connectées</p>
+              </div>
             </div>
 
-          </div>
-        ) : (
-          <div className="bg-white rounded-[28px] p-8 text-center space-y-3 border border-sauge/40">
-            <p className="text-xs text-encre/70 font-medium">
-              Tu n'as pas encore envoyé de candidature.
+            <p className="text-xs text-encre/70 leading-relaxed">
+              Vos alertes sont configurées pour recevoir les opportunités correspondant à vos critères au numéro <span className="font-bold text-vert-profond">{user.phone || 'non renseigné'}</span>.
             </p>
-            <Link
-              to="/offres"
-              className="inline-block px-6 py-2 rounded-full bg-vert-profond text-creme font-bold text-xs hover:bg-vert-moyen"
-            >
-              Découvrir les offres disponibles
-            </Link>
           </div>
-        )}
+
+        </div>
 
       </div>
 
       {/* Edit Profile Modal */}
       {isEditingProfile && (
-        <div className="fixed inset-0 z-50 bg-encre/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-[32px] max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl animate-scaleIn border border-sauge max-h-[90vh] overflow-y-auto">
-            
+        <div className="fixed inset-0 bg-vert-profond/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[32px] p-6 sm:p-8 max-w-lg w-full border border-sauge shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-sauge/30 pb-4">
               <h3 className="text-xl font-sora font-extrabold text-vert-profond">
-                Modifier mon profil
+                Modifier mon profil (Supabase)
               </h3>
               <button
                 onClick={() => setIsEditingProfile(false)}
-                className="p-1 rounded-full text-encre/60 hover:bg-sauge/20"
+                className="p-2 rounded-full hover:bg-sauge/20 text-encre/60 hover:text-vert-profond"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="space-y-4 text-xs sm:text-sm">
-              
+            <form onSubmit={handleSaveProfile} className="space-y-4 text-xs font-semibold">
               <div>
-                <label className="block font-semibold text-vert-profond mb-1">Nom et Prénom</label>
+                <label className="block text-vert-profond mb-1">Nom complet</label>
                 <input
                   type="text"
-                  required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none text-encre font-medium"
+                  className="w-full px-4 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-vert-profond mb-1">Numéro WhatsApp</label>
+                <label className="block text-vert-profond mb-1">Numéro WhatsApp</label>
                 <input
-                  type="tel"
-                  required
+                  type="text"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none text-encre font-medium"
+                  className="w-full px-4 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-vert-profond mb-1">Domaine</label>
+                  <label className="block text-vert-profond mb-1">Domaine</label>
                   <input
                     type="text"
                     value={editDomain}
                     onChange={(e) => setEditDomain(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none text-encre font-medium"
+                    className="w-full px-4 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-vert-profond mb-1">Niveau d'études</label>
+                  <label className="block text-vert-profond mb-1">Niveau d'études</label>
                   <input
                     type="text"
                     value={editEducation}
                     onChange={(e) => setEditEducation(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none text-encre font-medium"
+                    className="w-full px-4 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-vert-profond mb-1">Expérience</label>
+                  <label className="block text-vert-profond mb-1">Expérience</label>
                   <input
                     type="text"
                     value={editExperience}
                     onChange={(e) => setEditExperience(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none text-encre font-medium"
+                    className="w-full px-4 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-vert-profond mb-1">Ville</label>
+                  <label className="block text-vert-profond mb-1">Ville</label>
                   <input
                     type="text"
                     value={editLocation}
                     onChange={(e) => setEditLocation(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none text-encre font-medium"
+                    className="w-full px-4 py-2.5 rounded-xl border border-sauge/60 focus:border-vert-profond outline-none"
                   />
                 </div>
               </div>
@@ -384,22 +425,18 @@ export const DashboardPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsEditingProfile(false)}
-                  className="px-5 py-2.5 rounded-full border border-sauge text-encre/70 font-bold"
+                  className="px-5 py-2.5 rounded-full border border-sauge/60 text-encre/70 font-sora font-bold text-xs"
                 >
                   Annuler
                 </button>
-
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-full bg-vert-profond text-creme font-bold hover:bg-vert-moyen flex items-center gap-1.5 shadow-md"
+                  className="px-6 py-2.5 rounded-full bg-vert-profond text-creme font-sora font-bold text-xs hover:bg-vert-moyen transition-all"
                 >
-                  <Check className="w-4 h-4 text-or-clair" />
-                  <span>Enregistrer les modifications</span>
+                  Enregistrer les modifications
                 </button>
               </div>
-
             </form>
-
           </div>
         </div>
       )}
