@@ -125,7 +125,7 @@ export const OffersListPage: React.FC = () => {
       <div className="text-center space-y-3 max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-sauge/30 text-vert-profond text-xs sm:text-sm font-bold border border-sauge">
           <Sparkles className="w-4 h-4 text-or-ambre fill-or-ambre" />
-          <span>Base nationale d'opportunités en temps réel (Supabase)</span>
+          <span>Base nationale d'opportunités au Cameroun</span>
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-sora font-extrabold text-vert-profond tracking-tight">
@@ -220,7 +220,7 @@ export const OffersListPage: React.FC = () => {
       {/* Results Header */}
       <div className="flex items-center justify-between px-2">
         <p className="text-sm font-semibold text-encre/70">
-          Affichage de <span className="font-extrabold text-vert-profond">{filteredJobs.length}</span> opportunités vérifiées dans la base Supabase.
+          Affichage de <span className="font-extrabold text-vert-profond">{filteredJobs.length}</span> opportunités vérifiées au Cameroun.
         </p>
       </div>
 
@@ -228,7 +228,7 @@ export const OffersListPage: React.FC = () => {
       {loading && (
         <div className="py-20 text-center space-y-3">
           <div className="animate-spin rounded-full h-10 w-10 border-4 border-vert-profond border-t-transparent mx-auto"></div>
-          <p className="text-sm font-semibold text-encre/70">Chargement des offres depuis Supabase...</p>
+          <p className="text-sm font-semibold text-encre/70">Chargement des opportunités...</p>
         </div>
       )}
 

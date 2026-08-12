@@ -123,7 +123,7 @@ export const DashboardPage: React.FC = () => {
                   {user.name || 'Profil Candidate JobAlert'}
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full bg-whatsapp/20 text-whatsapp border border-whatsapp/40 text-[11px] font-bold">
-                  Profil vérifié (Supabase)
+                  Profil vérifié
                 </span>
               </div>
 
@@ -198,7 +198,7 @@ export const DashboardPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-or-ambre fill-or-ambre" />
                 <h2 className="text-xl font-sora font-extrabold text-vert-profond">
-                  Offres récentes pour vous (Supabase)
+                  Offres récentes pour vous
                 </h2>
               </div>
               <Link to="/offres" className="text-xs font-bold text-vert-profond hover:underline flex items-center gap-1">
@@ -346,7 +346,7 @@ export const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-[32px] p-6 sm:p-8 max-w-lg w-full border border-sauge shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-sauge/30 pb-4">
               <h3 className="text-xl font-sora font-extrabold text-vert-profond">
-                Modifier mon profil (Supabase)
+                Modifier mon profil
               </h3>
               <button
                 onClick={() => setIsEditingProfile(false)}

@@ -95,13 +95,13 @@ export const PublishOfferPage: React.FC = () => {
 
           <div className="space-y-3 max-w-lg mx-auto">
             <span className="px-3 py-1 rounded-full bg-or-ambre/20 text-vert-profond text-xs font-sora font-bold">
-              Enregistrée dans Supabase
+              Soumission enregistrée
             </span>
             <h2 className="text-2xl sm:text-3xl font-sora font-extrabold text-vert-profond">
               Votre offre est en attente de modération
             </h2>
             <p className="text-sm text-encre/80 leading-relaxed">
-              Merci ! L'offre a bien été enregistrée dans la table <code className="bg-sauge/30 px-2 py-0.5 rounded text-vert-profond">offers</code> avec le statut <span className="font-bold">"en_attente"</span>.
+              Merci ! Votre annonce a bien été enregistrée et est actuellement en attente de modération.
             </p>
           </div>
 
@@ -291,7 +291,7 @@ export const PublishOfferPage: React.FC = () => {
               className="w-full py-4 rounded-full bg-vert-profond hover:bg-vert-moyen text-creme font-sora font-extrabold text-base transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Send className="w-5 h-5 text-or-clair" />
-              <span>{isSubmitting ? 'Publication dans Supabase...' : 'Publier l\'offre d\'emploi'}</span>
+              <span>{isSubmitting ? 'Publication en cours...' : 'Publier l\'offre d\'emploi'}</span>
             </button>
 
           </form>

@@ -91,7 +91,7 @@ export const OfferDetailPage: React.FC = () => {
     return (
       <div className="pt-28 pb-24 px-4 max-w-4xl mx-auto text-center space-y-4">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-vert-profond border-t-transparent mx-auto"></div>
-        <p className="text-sm font-semibold text-encre/70">Chargement des détails de l'offre depuis Supabase...</p>
+        <p className="text-sm font-semibold text-encre/70">Chargement des détails de l'offre...</p>
       </div>
     );
   }
