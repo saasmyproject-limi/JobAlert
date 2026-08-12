@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from '../router/Router';
-import { LogIn, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { LogIn, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -11,11 +11,24 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Vérifie si l'utilisateur revient après avoir cliqué sur le lien de confirmation
+    if (typeof window !== 'undefined') {
+      const search = window.location.search;
+      const hash = window.location.hash;
+      if (search.includes('confirmed=true') || hash.includes('type=signup') || hash.includes('access_token')) {
+        setSuccessMessage('🎉 Votre adresse e-mail a été confirmée avec succès ! Vous pouvez maintenant vous connecter.');
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setSuccessMessage(null);
 
     if (!email.trim() || !password.trim()) {
       setErrorMessage('Veuillez remplir tous les champs obligatoires.');
@@ -54,6 +67,14 @@ export const LoginPage: React.FC = () => {
       {/* Login Form Card */}
       <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-sauge/40 shadow-subtle space-y-6">
         
+        {/* Success Banner */}
+        {successMessage && (
+          <div className="p-4 rounded-2xl bg-whatsapp/15 border border-whatsapp/40 text-vert-profond text-xs font-semibold flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-whatsapp flex-shrink-0 mt-0.5" />
+            <span>{successMessage}</span>
+          </div>
+        )}
+
         {/* Error Banner */}
         {errorMessage && (
           <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-3">

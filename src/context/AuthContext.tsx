@@ -3,8 +3,9 @@ import { UserProfile, JobApplication, JobOffer } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { Session } from '@supabase/supabase-js';
 
-interface AuthResult {
+export interface AuthResult {
   success: boolean;
+  requiresEmailConfirmation?: boolean;
   error?: string;
 }
 
@@ -87,7 +88,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isLoggedIn: true,
         });
       } else {
-        // Fallback si le profil n'a pas encore été créé dans public.profiles
         setUser({
           ...defaultUserProfile,
           email: userEmail,
@@ -109,7 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    // 2. Écouter les changements d'état d'authentification (login, logout, token refresh)
+    // 2. Écouter les changements d'état d'authentification
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -142,6 +142,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let msg = error.message;
         if (msg.includes('Invalid login credentials')) {
           msg = 'Email ou mot de passe incorrect.';
+        } else if (msg.includes('Email not confirmed')) {
+          msg = 'Votre adresse email n\'a pas encore été confirmée. Veuillez vérifier votre boîte de réception et cliquer sur le lien de confirmation.';
         }
         return { success: false, error: msg };
       }
@@ -180,11 +182,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'Veuillez saisir un mot de passe.' };
       }
 
-      // 1. Création de l'utilisateur Supabase Auth
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/connexion?confirmed=true`
+        : undefined;
+
+      // 1. Inscription de l'utilisateur Supabase Auth avec envoi de l'email de confirmation
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: profileData.email,
         password: profileData.password,
         options: {
+          emailRedirectTo: redirectTo,
           data: {
             full_name: profileData.name,
           },
@@ -204,7 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'Impossible de créer le compte.' };
       }
 
-      // 2. Étape 4.1 : Écriture du profil complet dans la table public.profiles
+      // 2. Écriture du profil complet dans la table public.profiles
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
@@ -226,8 +233,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Erreur insertion profil public:', profileError);
       }
 
-      await loadUserProfile(userId, profileData.email);
-      return { success: true };
+      // Si la session est null, la confirmation par email est activée dans Supabase
+      const requiresEmailConfirmation = !authData.session;
+
+      if (!requiresEmailConfirmation) {
+        await loadUserProfile(userId, profileData.email);
+      }
+
+      return {
+        success: true,
+        requiresEmailConfirmation,
+      };
     } catch (err: any) {
       return { success: false, error: err?.message || 'Erreur lors de l’inscription' };
     }

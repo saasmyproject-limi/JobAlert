@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from '../router/Router';
 import { JobType } from '../types';
-import { MessageSquare, Upload, CheckCircle2, FileText, ArrowRight, ShieldCheck, Tag, Sparkles, AlertCircle } from 'lucide-react';
+import { MessageSquare, Upload, CheckCircle2, FileText, ArrowRight, ShieldCheck, Tag, Sparkles, AlertCircle, Mail } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
@@ -36,6 +36,7 @@ export const RegisterPage: React.FC = () => {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const toggleSearchType = (type: JobType) => {
     if (searchTypes.includes(type)) {
@@ -104,7 +105,11 @@ export const RegisterPage: React.FC = () => {
     setIsSubmitting(false);
 
     if (result.success) {
-      navigate('/tableau-de-bord');
+      if (result.requiresEmailConfirmation) {
+        setEmailSent(true);
+      } else {
+        navigate('/tableau-de-bord');
+      }
     } else {
       setErrorMessage(result.error || 'Erreur lors de la création de votre compte.');
     }
@@ -128,15 +133,48 @@ export const RegisterPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Form Card */}
-      <div className="bg-white rounded-[32px] p-6 sm:p-10 border border-sauge/40 shadow-subtle relative overflow-hidden">
-        
-        {errorMessage && (
-          <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <span>{errorMessage}</span>
+      {emailSent ? (
+        <div className="bg-white rounded-[32px] p-8 sm:p-12 border border-sauge/40 shadow-subtle text-center space-y-6 animate-fadeIn max-w-xl mx-auto">
+          <div className="w-20 h-20 rounded-full bg-whatsapp/20 text-whatsapp flex items-center justify-center mx-auto shadow-sm">
+            <Mail className="w-10 h-10" />
           </div>
-        )}
+
+          <div className="space-y-3">
+            <span className="px-3 py-1 rounded-full bg-whatsapp/20 text-vert-profond text-xs font-sora font-bold">
+              Email de confirmation envoyé
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-sora font-extrabold text-vert-profond">
+              Vérifiez votre boîte mail !
+            </h2>
+            <p className="text-sm text-encre/80 leading-relaxed">
+              Un e-mail de confirmation a été envoyé à <strong className="text-vert-profond">{email}</strong>. Veuillez consulter votre boîte de réception et cliquer sur le lien de confirmation pour activer votre compte.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-creme border border-sauge/40 text-xs text-encre/70 space-y-1 text-left">
+            <p className="font-bold text-vert-profond">📌 Prochaine étape :</p>
+            <p>Une fois que vous aurez cliqué sur le lien reçu par e-mail, votre compte sera immédiatement actif et vous pourrez vous connecter.</p>
+          </div>
+
+          <div className="pt-2">
+            <Link
+              to="/connexion"
+              className="inline-block px-8 py-3.5 rounded-full bg-vert-profond text-creme font-sora font-bold text-sm hover:bg-vert-moyen transition-all"
+            >
+              Aller à la page de connexion
+            </Link>
+          </div>
+        </div>
+      ) : (
+        /* Form Card */
+        <div className="bg-white rounded-[32px] p-6 sm:p-10 border border-sauge/40 shadow-subtle relative overflow-hidden">
+          
+          {errorMessage && (
+            <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
         {/* Step indicator */}
         <div className="flex items-center justify-between border-b border-sauge/30 pb-6 mb-8">
@@ -544,6 +582,7 @@ export const RegisterPage: React.FC = () => {
         </form>
 
       </div>
+      )}
 
       {/* Switch to Login link */}
       <div className="text-center mt-6">
