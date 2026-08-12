@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "scrape:fne": "node scripts/fne_scraper.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
