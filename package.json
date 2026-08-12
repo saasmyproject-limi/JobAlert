@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "scrape:fne": "node scripts/fne_scraper.js",
     "scrape:all": "node scripts/master_scraper.js",
-    "scrape:bourses": "node scripts/scholarships_scraper.js"
+    "scrape:bourses": "node scripts/scholarships_scraper.js",
+    "scrape:stages": "node scripts/internships_informal_scraper.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
