@@ -1,0 +1,34 @@
+name: Automatic Daily Scraper 12h00 ESSOR Cameroun
+
+on:
+  schedule:
+    # Exécution automatique tous les jours à 12:00 WAT (Cameroun UTC+1 = 11:00 UTC)
+    - cron: '0 11 * * *'
+  workflow_dispatch: # Permet de lancer manuellement depuis l'onglet Actions de GitHub
+
+jobs:
+  run-scrapers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Exécuter le scraping automatique (Toutes sources, bourses, stages & informel)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          echo "🚀 Exécution du scraping automatique à 12h00..."
+          npm run scrape:all
+          npm run scrape:bourses
+          npm run scrape:stages
+          echo "✅ Scraping quotidien 12h00 terminé avec succès !"
