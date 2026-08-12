@@ -57,7 +57,7 @@ export const LoginPage: React.FC = () => {
         </div>
 
         <h1 className="text-3xl font-sora font-extrabold text-vert-profond tracking-tight">
-          Connexion à JobAlert
+          Connexion à ESSOR
         </h1>
         <p className="text-sm text-encre/70">
           Accède à ton tableau de bord et gère tes alertes WhatsApp.

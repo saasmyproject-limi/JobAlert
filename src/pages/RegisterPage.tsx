@@ -126,7 +126,7 @@ export const RegisterPage: React.FC = () => {
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-sora font-extrabold text-vert-profond tracking-tight">
-          Crée ton profil JobAlert
+          Crée ton profil ESSOR
         </h1>
         <p className="text-base text-encre/70 max-w-xl mx-auto">
           Reçois des opportunités sur-mesure directement sur WhatsApp dès qu'elles sont publiées au Cameroun.
@@ -587,7 +587,7 @@ export const RegisterPage: React.FC = () => {
       {/* Switch to Login link */}
       <div className="text-center mt-6">
         <p className="text-sm text-encre/70 font-medium">
-          Tu as déjà un compte JobAlert ?{' '}
+          Tu as déjà un compte ESSOR ?{' '}
           <Link to="/connexion" className="text-vert-profond font-bold hover:underline">
             Se connecter
           </Link>

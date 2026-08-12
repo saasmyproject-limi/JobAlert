@@ -120,7 +120,7 @@ export const DashboardPage: React.FC = () => {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl sm:text-3xl font-sora font-extrabold text-white">
-                  {user.name || 'Profil Candidate JobAlert'}
+                  {user.name || 'Profil Candidat ESSOR'}
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full bg-whatsapp/20 text-whatsapp border border-whatsapp/40 text-[11px] font-bold">
                   Profil vérifié

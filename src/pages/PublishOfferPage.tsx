@@ -78,7 +78,7 @@ export const PublishOfferPage: React.FC = () => {
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-sora font-extrabold text-vert-profond tracking-tight">
-          Publier une offre sur JobAlert
+          Publier une offre sur ESSOR
         </h1>
         <p className="text-base text-encre/70 max-w-xl mx-auto">
           Touche instantanément des milliers de candidats qualifiés partout au Cameroun directement sur WhatsApp.

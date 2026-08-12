@@ -25,11 +25,11 @@ export const AppNavbar: React.FC = () => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-creme/95 backdrop-blur-md border-b border-sauge/40 transition-all shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
-        {/* Logo JobAlert with WhatsApp Green Dot */}
+        {/* Logo ESSOR with WhatsApp Green Dot */}
         <Link to="/" className="flex items-center gap-2.5 group">
           <div className="relative flex items-center justify-center">
             <span className="font-sora font-extrabold text-2xl tracking-tight text-vert-profond">
-              Job<span className="text-or-ambre">Alert</span>
+              ES<span className="text-or-ambre">SOR</span>
             </span>
             <span 
               className="w-2.5 h-2.5 rounded-full bg-whatsapp inline-block ml-1 shadow-sm animate-pulse" 

@@ -14,11 +14,11 @@ export const FinalCTA: React.FC = () => {
           
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sauge/30 text-vert-profond text-xs sm:text-sm font-semibold border border-sauge">
             <Sparkles className="w-4 h-4 text-or-ambre fill-or-ambre" />
-            <span>Rejoins la communauté JobAlert</span>
+            <span>Rejoins la communauté ESSOR</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-sora font-extrabold text-vert-profond tracking-tight leading-tight">
-            Laisse JobAlert chercher pendant que tu avances.
+            Laisse ESSOR chercher pendant que tu avances.
           </h2>
 
           <p className="text-base sm:text-lg text-encre/80 font-normal leading-relaxed">

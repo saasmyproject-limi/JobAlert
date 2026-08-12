@@ -23,7 +23,7 @@ export const HeroSection: React.FC = () => {
 
           {/* Descriptive Subtitle */}
           <p className="text-base sm:text-lg text-encre/80 font-normal leading-relaxed max-w-2xl">
-            JobAlert scanne en continu les concours publics, bourses officielles et offres d'emploi au Cameroun. Recevez des alertes ciblées directement sur votre compte <span className="font-semibold text-vert-profond">WhatsApp</span> dès qu'une opportunité vous correspond.
+            ESSOR scanne en continu les concours publics, bourses officielles et offres d'emploi au Cameroun. Recevez des alertes ciblées directement sur votre compte <span className="font-semibold text-vert-profond">WhatsApp</span> dès qu'une opportunité vous correspond.
           </p>
 
           {/* Action Buttons */}
@@ -69,7 +69,7 @@ export const HeroSection: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-sauge/30">
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider text-encre/60 font-semibold">Cameroun JobAlert</span>
+                    <span className="text-[10px] uppercase tracking-wider text-encre/60 font-semibold">Cameroun ESSOR</span>
                     <h3 className="font-sora font-extrabold text-lg text-vert-profond">Mes offres</h3>
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-or-ambre/20 text-vert-profond text-xs font-sora font-bold border border-or-ambre/40 flex items-center gap-1">
@@ -134,7 +134,7 @@ export const HeroSection: React.FC = () => {
                       <div className="w-6 h-6 rounded-full bg-whatsapp flex items-center justify-center text-white text-xs font-bold shadow-sm">
                         <MessageSquare className="w-3.5 h-3.5 fill-white" />
                       </div>
-                      <span className="font-sora font-bold text-xs text-vert-profond">JobAlert</span>
+                      <span className="font-sora font-bold text-xs text-vert-profond">ESSOR</span>
                     </div>
                     <span className="px-2 py-0.5 rounded-full bg-whatsapp/15 text-vert-profond text-[10px] font-sora font-extrabold border border-whatsapp/30">
                       92% match

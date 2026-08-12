@@ -13,7 +13,7 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     name: "Ghapoutsa Limi",
     role: "Fondateur & Directeur du Projet",
-    bio: "Visionnaire de la plateforme JobAlert au Cameroun, engagé dans la digitalisation et la démocratisation de l'accès aux opportunités professionnelles.",
+    bio: "Visionnaire de la plateforme ESSOR au Cameroun, engagé dans la digitalisation et la démocratisation de l'accès aux opportunités professionnelles.",
     avatar: "GL",
     badge: "Fondateur & Visionnaire"
   },
@@ -37,7 +37,7 @@ export const TeamSection: React.FC = () => {
         </div>
 
         <h2 className="text-3xl sm:text-4xl font-sora font-extrabold text-vert-profond tracking-tight">
-          Les Porteurs du Projet JobAlert
+          Les Porteurs du Projet ESSOR
         </h2>
         <p className="text-base text-encre/70 max-w-xl mx-auto font-medium">
           Une équipe passionnée au service de l'insertion professionnelle et de la transparence des opportunités au Cameroun.

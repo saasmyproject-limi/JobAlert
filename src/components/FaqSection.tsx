@@ -12,7 +12,7 @@ const FAQ_DATA: FaqItem[] = [
     answer: "Dès que vous créez votre profil en renseignant votre domaine, niveau d'études et numéro WhatsApp, notre algorithme analyse en continu les nouvelles opportunités publiées au Cameroun. Lorsqu'une offre correspond à votre profil, vous la recevez instantanément sous forme de notification sur WhatsApp."
   },
   {
-    question: "JobAlert est-il totalement gratuit pour les candidats ?",
+    question: "ESSOR est-il totalement gratuit pour les candidats ?",
     answer: "Oui, l'inscription et la réception des alertes d'emploi, concours MINFOPRA et bourses sur WhatsApp sont 100% gratuites pour tous les candidats et étudiants au Cameroun."
   },
   {
@@ -49,7 +49,7 @@ export const FaqSection: React.FC = () => {
           Questions Fréquemment Posées (FAQ)
         </h2>
         <p className="text-base text-encre/70 max-w-xl mx-auto font-medium">
-          Tout ce que vous devez savoir sur le fonctionnement de JobAlert et le traitement de vos candidatures.
+          Tout ce que vous devez savoir sur le fonctionnement d'ESSOR et le traitement de vos candidatures.
         </p>
       </div>
 

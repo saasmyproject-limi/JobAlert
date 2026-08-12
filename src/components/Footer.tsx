@@ -14,7 +14,7 @@ export const Footer: React.FC = () => {
           <div className="space-y-4 md:col-span-1">
             <div className="flex items-center gap-2">
               <span className="font-sora font-extrabold text-2xl tracking-tight text-creme">
-                Job<span className="text-or-ambre">Alert</span>
+                ES<span className="text-or-ambre">SOR</span>
               </span>
               <span className="w-2.5 h-2.5 rounded-full bg-whatsapp inline-block animate-pulse" />
             </div>
@@ -113,7 +113,7 @@ export const Footer: React.FC = () => {
         {/* Bottom Line & Copyright */}
         <div className="pt-8 border-t border-creme/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs text-creme/60 font-medium">
           <div>
-            © {new Date().getFullYear()} JobAlert Cameroun. Tous droits réservés.
+            © {new Date().getFullYear()} ESSOR Cameroun. Tous droits réservés.
           </div>
           <div className="flex items-center gap-1">
             <span>Conçu avec</span>

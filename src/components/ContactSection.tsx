@@ -29,7 +29,7 @@ export const ContactSection: React.FC = () => {
         </div>
 
         <h2 className="text-3xl sm:text-4xl font-sora font-extrabold text-vert-profond tracking-tight">
-          Contactez l'Équipe JobAlert
+          Contactez l'Équipe ESSOR
         </h2>
         <p className="text-base text-encre/70 max-w-xl mx-auto font-medium">
           Une question, une suggestion ou un partenariat ? Écrivez-nous ou contactez-nous directement sur WhatsApp.
