@@ -70,21 +70,17 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2 text-xs font-medium text-creme/80">
               <li className="flex flex-col">
+                <span className="font-bold text-creme">Ghapoutsa Limi</span>
+                <span className="text-[11px] text-creme/60">Fondateur & Directeur du Projet</span>
+              </li>
+              <li className="flex flex-col">
                 <span className="font-bold text-creme">Tchantchou Nguemou</span>
-                <span className="text-[11px] text-creme/60">Fondateur & Lead Architecte SaaS</span>
-              </li>
-              <li className="flex flex-col">
-                <span className="font-bold text-creme">Jean-Marc Nkoa</span>
-                <span className="text-[11px] text-creme/60">Partenariats & Modération</span>
-              </li>
-              <li className="flex flex-col">
-                <span className="font-bold text-creme">Ingrid Ondoua</span>
-                <span className="text-[11px] text-creme/60">UX & Expérience Candidat</span>
+                <span className="text-[11px] text-creme/60">Co-Fondateur & Lead Architecte</span>
               </li>
             </ul>
           </div>
 
-          {/* Col 4: Couverture & Contact */}
+          {/* Col 4: Bureaux & Contact */}
           <div className="space-y-3">
             <h4 className="font-sora font-extrabold text-or-clair text-xs uppercase tracking-wider">
               Bureaux & Contact
@@ -122,7 +118,7 @@ export const Footer: React.FC = () => {
           <div className="flex items-center gap-1">
             <span>Conçu avec</span>
             <Heart className="w-3.5 h-3.5 text-red-400 fill-red-400 inline" />
-            <span>par l'équipe JobAlert Cameroun</span>
+            <span>par Ghapoutsa Limi & Tchantchou Nguemou</span>
           </div>
         </div>
 
