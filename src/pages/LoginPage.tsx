@@ -30,7 +30,9 @@ export const LoginPage: React.FC = () => {
     setErrorMessage(null);
     setSuccessMessage(null);
     const result = await loginWithGoogle();
-    if (!result.success && result.error) {
+    if (result.success) {
+      navigate('/tableau-de-bord');
+    } else if (result.error) {
       setErrorMessage(result.error);
     }
   };

@@ -80,7 +80,9 @@ export const RegisterPage: React.FC = () => {
   const handleGoogleAuth = async () => {
     setErrorMessage(null);
     const result = await loginWithGoogle();
-    if (!result.success && result.error) {
+    if (result.success) {
+      navigate('/tableau-de-bord');
+    } else if (result.error) {
       setErrorMessage(result.error);
     }
   };

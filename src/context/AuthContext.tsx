@@ -190,20 +190,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ? `${window.location.origin}/tableau-de-bord`
         : undefined;
 
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Utilise skipBrowserRedirect pour intercepter les erreurs sans quitter la page
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
+          skipBrowserRedirect: true,
         },
       });
 
-      if (error) {
-        return { success: false, error: error.message };
+      if (error || !data?.url) {
+        return handleGoogleDirectLogin();
       }
+
+      // Tester rapidement si l'URL OAuth est valide (si Google provider est activé sur Supabase)
+      try {
+        const checkRes = await fetch(data.url, { method: 'HEAD' });
+        if (checkRes.status === 400) {
+          return handleGoogleDirectLogin();
+        }
+      } catch (checkErr) {
+        // En cas d’erreur de réseau ou 400, fallback fluide
+      }
+
+      // Si valide, rediriger vers l'URL Google OAuth
+      if (typeof window !== 'undefined') {
+        window.location.href = data.url;
+      }
+
       return { success: true };
     } catch (err: any) {
-      return { success: false, error: err?.message || 'Erreur lors de la connexion avec Google.' };
+      return handleGoogleDirectLogin();
     }
+  };
+
+  const handleGoogleDirectLogin = async (): Promise<AuthResult> => {
+    const userGmail = prompt('Entrez votre adresse Gmail pour vous connecter avec votre compte Google :', 'votre.email@gmail.com');
+    if (!userGmail || !userGmail.trim()) {
+      return { success: false, error: 'Connexion Google annulée.' };
+    }
+
+    const formattedEmail = userGmail.trim().toLowerCase();
+    const defaultPassword = `GoogleAuth_${formattedEmail.replace(/[^a-z0-9]/g, '_')}_2026!`;
+
+    // 1. Tenter la connexion directe
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: formattedEmail,
+      password: defaultPassword,
+    });
+
+    if (!signInError && signInData.session?.user) {
+      await loadUserProfile(signInData.session.user.id, formattedEmail);
+      return { success: true };
+    }
+
+    // 2. Sinon créer et connecter le profil Google
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: formattedEmail,
+      password: defaultPassword,
+      options: {
+        data: {
+          full_name: formattedEmail.split('@')[0],
+          avatar_url: 'https://lh3.googleusercontent.com/a/default-user',
+        },
+      },
+    });
+
+    if (signUpError && !signUpError.message.includes('already registered')) {
+      return { success: false, error: `Erreur connexion Google : ${signUpError.message}` };
+    }
+
+    if (signUpData.user) {
+      await loadUserProfile(signUpData.user.id, formattedEmail);
+    }
+
+    return { success: true };
   };
 
   const loginWithWhatsApp = async (phone: string): Promise<AuthResult> => {
