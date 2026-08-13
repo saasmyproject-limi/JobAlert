@@ -3,12 +3,15 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation } from '../router/Router';
 import { JobOffer, JobType } from '../types';
-import { Building2, MapPin, Calendar, CheckCircle2, ExternalLink, ArrowLeft, Send, Sparkles, MessageSquare, Share2, AlertCircle } from 'lucide-react';
+import { Building2, MapPin, Calendar, CheckCircle2, ExternalLink, ArrowLeft, Send, Sparkles, MessageSquare, Share2, AlertCircle, Stethoscope, FileText, Mic } from 'lucide-react';
 import { AntiScamBanner } from '../components/AntiScamBanner';
+import { CVDoctorModal } from '../components/CVDoctorModal';
+import { CoverLetterGeneratorModal } from '../components/CoverLetterGeneratorModal';
+import { InterviewSimulatorModal } from '../components/InterviewSimulatorModal';
 
 export const OfferDetailPage: React.FC = () => {
   const { pathname } = useLocation();
-  const { applyToJob, hasApplied } = useAuth();
+  const { user, applyToJob, hasApplied } = useAuth();
 
   // Extract ID from pathname (e.g. /offres/UUID)
   const id = pathname.replace('/offres/', '').replace('/', '');
@@ -19,6 +22,11 @@ export const OfferDetailPage: React.FC = () => {
 
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [appliedSuccess, setAppliedSuccess] = useState(false);
+
+  // States pour les modales IA Carrière (v2)
+  const [showCVDoctor, setShowCVDoctor] = useState(false);
+  const [showCoverLetter, setShowCoverLetter] = useState(false);
+  const [showInterviewSim, setShowInterviewSim] = useState(false);
 
   useEffect(() => {
     const fetchOfferDetail = async () => {
@@ -222,6 +230,33 @@ export const OfferDetailPage: React.FC = () => {
               </a>
             )}
 
+            {/* AI Assistant Buttons Bar */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
+              <button
+                onClick={() => setShowCVDoctor(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-800 font-sora font-bold text-xs hover:bg-emerald-100 transition-all"
+              >
+                <Stethoscope className="w-3.5 h-3.5 text-emerald-600" />
+                <span>CV Doctor IA</span>
+              </button>
+
+              <button
+                onClick={() => setShowCoverLetter(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-amber-50 border border-amber-300 text-amber-900 font-sora font-bold text-xs hover:bg-amber-100 transition-all"
+              >
+                <FileText className="w-3.5 h-3.5 text-amber-600" />
+                <span>Lettre IA</span>
+              </button>
+
+              <button
+                onClick={() => setShowInterviewSim(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-indigo-50 border border-indigo-300 text-indigo-900 font-sora font-bold text-xs hover:bg-indigo-100 transition-all"
+              >
+                <Mic className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Simulateur d'Entretien</span>
+              </button>
+            </div>
+
           </div>
 
           <button
@@ -332,6 +367,21 @@ export const OfferDetailPage: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* CV Doctor Modal */}
+      {showCVDoctor && job && (
+        <CVDoctorModal job={job} user={user} onClose={() => setShowCVDoctor(false)} />
+      )}
+
+      {/* Cover Letter Generator Modal */}
+      {showCoverLetter && job && (
+        <CoverLetterGeneratorModal job={job} user={user} onClose={() => setShowCoverLetter(false)} />
+      )}
+
+      {/* Interview Simulator Modal */}
+      {showInterviewSim && job && (
+        <InterviewSimulatorModal job={job} user={user} onClose={() => setShowInterviewSim(false)} />
       )}
 
     </div>

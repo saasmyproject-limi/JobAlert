@@ -66,6 +66,18 @@ export const AppNavbar: React.FC = () => {
             <span>Publier une offre</span>
           </Link>
 
+          <Link 
+            to="/guide-freelance" 
+            className={`transition-colors py-1 px-3 rounded-full flex items-center gap-1.5 ${
+              isActive('/guide-freelance') 
+                ? 'bg-vert-profond/10 text-vert-profond font-semibold'
+                : 'hover:text-vert-profond hover:bg-sauge/20'
+            }`}
+          >
+            <Zap className="w-4 h-4 text-amber-500" />
+            <span>Guide Freelance</span>
+          </Link>
+
           {user.isLoggedIn && (
             <Link 
               to="/tableau-de-bord" 
