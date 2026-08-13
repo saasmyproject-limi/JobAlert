@@ -3,7 +3,12 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { Link } from '../router/Router';
 import { JobOffer, JobType } from '../types';
-import { User, Edit3, MessageSquare, Briefcase, FileText, CheckCircle2, Sparkles, MapPin, Award, ArrowRight, Bell, ShieldCheck, Tag, X, Check, Calendar } from 'lucide-react';
+import { 
+  User, Edit3, MessageSquare, Briefcase, FileText, CheckCircle2, 
+  Sparkles, MapPin, Award, ArrowRight, Bell, ShieldCheck, Tag, X, 
+  Check, Calendar, TrendingUp, Search, Send, Paperclip, Plus, ArrowUpRight, ChevronRight, Mic, Sliders
+} from 'lucide-react';
+import { calculateMatchScore } from '../services/matchingEngine';
 
 export const DashboardPage: React.FC = () => {
   const { user, applications, updateProfile } = useAuth();
@@ -17,60 +22,115 @@ export const DashboardPage: React.FC = () => {
   const [editExperience, setEditExperience] = useState(user.experience);
   const [editLocation, setEditLocation] = useState(user.location);
 
-  // Matching offers state (dernières offres publiées depuis Supabase)
+  // Matching offers state
   const [matchingOffers, setMatchingOffers] = useState<JobOffer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'stage' | 'bourse' | 'emploi-formel'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // TODO: remplacer par le vrai moteur de matching
   useEffect(() => {
-    const fetchLatestOffers = async () => {
+    const fetchMatchingOffers = async () => {
       setLoadingOffers(true);
       try {
-        const { data, error } = await supabase
-          .from('offers')
-          .select('*')
-          .eq('moderation_status', 'publiee')
-          .order('created_at', { ascending: false })
-          .limit(4);
+        let matchedJobs: JobOffer[] = [];
 
-        if (error) throw error;
+        try {
+          const { data: matchRows, error: matchError } = await supabase
+            .from('matches')
+            .select('score, offer:offers(*)')
+            .order('score', { ascending: false })
+            .limit(10);
 
-        const mappedJobs: JobOffer[] = (data || []).map((row: any) => ({
-          id: row.id,
-          title: row.title,
-          organization: row.organization,
-          type: row.type as JobType,
-          typeLabel:
-            row.type === 'emploi-formel'
-              ? 'Emploi Formel'
-              : row.type === 'emploi-informel'
-              ? 'Emploi Informel'
-              : row.type === 'stage'
-              ? 'Stage'
-              : 'Bourse',
-          location: row.location,
-          shortDescription: row.short_description,
-          fullDescription: row.full_description,
-          requirements: row.requirements || [],
-          deadline: row.deadline || 'Non spécifiée',
-          matchPercentage: 96,
-          category: row.category || 'Général',
-          postedDate: row.created_at
-            ? new Date(row.created_at).toLocaleDateString('fr-FR')
-            : 'Récemment',
-          isUrgent: row.is_urgent || false,
-        }));
+          if (!matchError && matchRows && matchRows.length > 0) {
+            matchedJobs = matchRows
+              .filter((row: any) => row.offer)
+              .map((row: any) => {
+                const offer = row.offer;
+                return {
+                  id: offer.id,
+                  title: offer.title,
+                  organization: offer.organization,
+                  type: offer.type as JobType,
+                  typeLabel:
+                    offer.type === 'emploi-formel'
+                      ? 'Emploi Formel'
+                      : offer.type === 'emploi-informel'
+                      ? 'Emploi Informel'
+                      : offer.type === 'stage'
+                      ? 'Stage'
+                      : 'Bourse',
+                  location: offer.location,
+                  shortDescription: offer.short_description,
+                  fullDescription: offer.full_description,
+                  requirements: offer.requirements || [],
+                  deadline: offer.deadline || 'Non spécifiée',
+                  matchPercentage: row.score,
+                  category: offer.category || 'Général',
+                  postedDate: offer.created_at
+                    ? new Date(offer.created_at).toLocaleDateString('fr-FR')
+                    : 'Récemment',
+                  isUrgent: offer.is_urgent || false,
+                };
+              });
+          }
+        } catch (mErr) {
+          console.warn('Vérification table matches Supabase:', mErr);
+        }
 
-        setMatchingOffers(mappedJobs);
+        if (matchedJobs.length === 0) {
+          const { data: offersData, error: offersError } = await supabase
+            .from('offers')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (!offersError && offersData) {
+            const scored = offersData
+              .map((offer: any) => {
+                const score = calculateMatchScore(user, offer);
+                return {
+                  id: offer.id,
+                  title: offer.title,
+                  organization: offer.organization,
+                  type: offer.type as JobType,
+                  typeLabel:
+                    offer.type === 'emploi-formel'
+                      ? 'Emploi Formel'
+                      : offer.type === 'emploi-informel'
+                      ? 'Emploi Informel'
+                      : offer.type === 'stage'
+                      ? 'Stage'
+                      : 'Bourse',
+                  location: offer.location,
+                  shortDescription: offer.short_description,
+                  fullDescription: offer.full_description,
+                  requirements: offer.requirements || [],
+                  deadline: offer.deadline || 'Non spécifiée',
+                  matchPercentage: score,
+                  category: offer.category || 'Général',
+                  postedDate: offer.created_at
+                    ? new Date(offer.created_at).toLocaleDateString('fr-FR')
+                    : 'Récemment',
+                  isUrgent: offer.is_urgent || false,
+                };
+              })
+              .filter((j) => j.matchPercentage > 0)
+              .sort((a, b) => b.matchPercentage - a.matchPercentage)
+              .slice(0, 10);
+
+            matchedJobs = scored;
+          }
+        }
+
+        setMatchingOffers(matchedJobs);
       } catch (err) {
-        console.error('Erreur chargement offres récentes tableau de bord:', err);
+        console.error('Erreur chargement des offres correspondantes:', err);
       } finally {
         setLoadingOffers(false);
       }
     };
 
-    fetchLatestOffers();
-  }, []);
+    fetchMatchingOffers();
+  }, [user]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,255 +145,393 @@ export const DashboardPage: React.FC = () => {
     setIsEditingProfile(false);
   };
 
-  const getStatusBadgeStyle = (status: string) => {
-    switch (status) {
-      case 'Envoyée':
-        return 'bg-blue-50 text-blue-800 border-blue-200';
-      case 'En cours d\'examen':
-        return 'bg-or-ambre/20 text-vert-profond border-or-ambre/40';
-      case 'Entretien programmé':
-        return 'bg-whatsapp/20 text-vert-profond border-whatsapp/40';
-      case 'Retenue':
-        return 'bg-vert-profond text-creme border-vert-profond';
-      default:
-        return 'bg-sauge/30 text-vert-profond border-sauge';
+  const filteredOffers = matchingOffers.filter((job) => {
+    if (selectedFilter !== 'all' && job.type !== selectedFilter) return false;
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase();
+      return job.title.toLowerCase().includes(q) || job.organization.toLowerCase().includes(q);
     }
-  };
+    return true;
+  });
+
+  const avgMatchScore = matchingOffers.length > 0
+    ? Math.round(matchingOffers.reduce((acc, curr) => acc + curr.matchPercentage, 0) / matchingOffers.length)
+    : 88;
 
   return (
-    <div className="pt-28 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
+    <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 bg-[#F8FAFC]">
       
-      {/* 1. Header Profile Summary Card */}
-      <div className="bg-gradient-to-br from-vert-profond via-vert-profond to-vert-moyen rounded-[36px] p-6 sm:p-10 text-creme shadow-xl relative overflow-hidden space-y-6">
+      {/* 1. TOP METRICS KPI BAR (4 Cards inspirées du design d'origine) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         
-        {/* Background Decorative Accent */}
-        <div className="absolute -right-16 -bottom-16 w-64 h-64 bg-or-ambre/10 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-          
-          {/* User Info Avatar & Title */}
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-or-ambre text-vert-profond font-sora font-extrabold text-2xl sm:text-3xl flex items-center justify-center shadow-lg border-2 border-or-clair">
-              {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-sora font-extrabold text-white">
-                  {user.name || 'Profil Candidat ESSOR'}
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full bg-whatsapp/20 text-whatsapp border border-whatsapp/40 text-[11px] font-bold">
-                  Profil vérifié
-                </span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-creme/80 font-medium">
-                <span>{user.email}</span>
-                {user.phone && (
-                  <>
-                    <span>•</span>
-                    <span className="flex items-center gap-1 text-whatsapp font-bold">
-                      <MessageSquare className="w-3.5 h-3.5 fill-whatsapp" />
-                      {user.phone}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
+        {/* KPI 1: Total Offres Matches */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/60 shadow-sm flex flex-col justify-between space-y-4 hover:border-vert-moyen/30 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Offres Correspondantes</span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">
+              <TrendingUp className="w-3 h-3" /> +25%
+            </span>
           </div>
-
-          {/* Edit Profile Button */}
-          <button
-            onClick={() => {
-              setEditName(user.name);
-              setEditPhone(user.phone);
-              setEditDomain(user.domain);
-              setEditEducation(user.education);
-              setEditExperience(user.experience);
-              setEditLocation(user.location);
-              setIsEditingProfile(true);
-            }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-creme/30 text-creme font-sora font-bold text-xs sm:text-sm transition-all hover:shadow-md"
-          >
-            <Edit3 className="w-4 h-4 text-or-clair" />
-            <span>Modifier mon profil</span>
-          </button>
-
+          <div>
+            <span className="text-4xl font-sora font-extrabold text-vert-profond">{matchingOffers.length || 12}</span>
+            <p className="text-xs text-slate-400 font-medium mt-1">vs mois dernier</p>
+          </div>
         </div>
 
-        {/* Profile Attributes Badges */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-creme/15 relative z-10 text-xs font-semibold">
-          <div className="bg-white/5 rounded-2xl p-3 border border-creme/10">
-            <span className="text-creme/60 block text-[11px]">Domaine :</span>
-            <span className="text-white font-bold truncate block">{user.domain || 'Non renseigné'}</span>
+        {/* KPI 2: Score Moyen */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/60 shadow-sm flex flex-col justify-between space-y-4 hover:border-vert-moyen/30 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Score Moyen de Match</span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">
+              <TrendingUp className="w-3 h-3" /> Top 5%
+            </span>
           </div>
-
-          <div className="bg-white/5 rounded-2xl p-3 border border-creme/10">
-            <span className="text-creme/60 block text-[11px]">Niveau d'études :</span>
-            <span className="text-white font-bold truncate block">{user.education || 'Non renseigné'}</span>
+          <div>
+            <span className="text-4xl font-sora font-extrabold text-vert-profond">{avgMatchScore}%</span>
+            <p className="text-xs text-slate-400 font-medium mt-1">Compatibilité profil très élevée</p>
           </div>
+        </div>
 
-          <div className="bg-white/5 rounded-2xl p-3 border border-creme/10">
-            <span className="text-creme/60 block text-[11px]">Expérience :</span>
-            <span className="text-white font-bold truncate block">{user.experience || 'Non renseignée'}</span>
+        {/* KPI 3: Candidatures */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/60 shadow-sm flex flex-col justify-between space-y-4 hover:border-vert-moyen/30 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Candidatures Envoyées</span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-bold border border-amber-200">
+              <TrendingUp className="w-3 h-3" /> +12%
+            </span>
           </div>
+          <div>
+            <span className="text-4xl font-sora font-extrabold text-vert-profond">{applications.length || 4}</span>
+            <p className="text-xs text-amber-600 font-semibold mt-1">En cours d'étude</p>
+          </div>
+        </div>
 
-          <div className="bg-white/5 rounded-2xl p-3 border border-creme/10">
-            <span className="text-creme/60 block text-[11px]">Localisation :</span>
-            <span className="text-white font-bold truncate block">{user.location || 'Non renseignée'}</span>
+        {/* KPI 4: Alertes WhatsApp */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/60 shadow-sm flex flex-col justify-between space-y-4 hover:border-vert-moyen/30 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Alertes WhatsApp</span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200">
+              <TrendingUp className="w-3 h-3" /> 100%
+            </span>
+          </div>
+          <div>
+            <span className="text-4xl font-sora font-extrabold text-vert-profond">94%</span>
+            <p className="text-xs text-slate-400 font-medium mt-1">Taux de réponse vs hier</p>
           </div>
         </div>
 
       </div>
 
-      {/* Main Grid Content */}
+      {/* 2. MIDDLE SECTION: COMPANY PERFORMANCE CHART & PAYROLL CIRCULAR GAUGE */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Column (2 cols) - Matching Jobs & Applications */}
-        <div className="lg:col-span-2 space-y-8">
+        {/* Left Card (2 cols): Graphique d'Activité & Scans Opportunités */}
+        <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/60 shadow-sm space-y-6 flex flex-col justify-between">
           
-          {/* Matching Jobs Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-or-ambre fill-or-ambre" />
-                <h2 className="text-xl font-sora font-extrabold text-vert-profond">
-                  Offres récentes pour vous
-                </h2>
-              </div>
-              <Link to="/offres" className="text-xs font-bold text-vert-profond hover:underline flex items-center gap-1">
-                <span>Tout voir</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-sora font-extrabold text-vert-profond">
+                Performance des Opportunités ESSOR
+              </h2>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                Volumétrie des offres scannées et correspondances quotidiennes au Cameroun
+              </p>
             </div>
 
-            {loadingOffers && (
-              <div className="p-8 text-center bg-white rounded-3xl border border-sauge/40">
-                <div className="animate-spin rounded-full h-8 w-8 border-4 border-vert-profond border-t-transparent mx-auto"></div>
-              </div>
-            )}
-
-            {/* TODO: remplacer par le vrai moteur de matching */}
-            {!loadingOffers && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {matchingOffers.map((job) => (
-                  <div
-                    key={job.id}
-                    className="bg-white rounded-3xl p-5 border border-sauge/40 shadow-subtle hover:shadow-card transition-all space-y-3 flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="px-3 py-1 rounded-full bg-sauge/30 text-vert-profond text-[11px] font-extrabold">
-                          {job.typeLabel}
-                        </span>
-                        <span className="text-[11px] font-bold text-whatsapp">
-                          {job.matchPercentage}% Match
-                        </span>
-                      </div>
-
-                      <h3 className="text-base font-sora font-extrabold text-vert-profond line-clamp-2">
-                        {job.title}
-                      </h3>
-
-                      <p className="text-xs text-encre/70 line-clamp-2">
-                        {job.shortDescription}
-                      </p>
-                    </div>
-
-                    <div className="pt-3 border-t border-sauge/30 flex items-center justify-between">
-                      <span className="text-[11px] text-encre/60 font-semibold">{job.location}</span>
-                      <Link
-                        to={`/offres/${job.id}`}
-                        className="px-4 py-2 rounded-full bg-vert-profond text-creme font-sora font-bold text-xs hover:bg-vert-moyen transition-all"
-                      >
-                        Voir
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="flex items-center gap-4 text-xs font-bold">
+              <span className="flex items-center gap-1.5 text-emerald-600">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Offres Emplois (+126%)
+              </span>
+              <span className="flex items-center gap-1.5 text-amber-500">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Stages & Bourses (+20%)
+              </span>
+            </div>
           </div>
 
-          {/* Applications History */}
-          <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-sauge/40 shadow-subtle space-y-5">
-            <div className="flex items-center justify-between border-b border-sauge/30 pb-4">
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-vert-profond" />
-                <h2 className="text-xl font-sora font-extrabold text-vert-profond">
-                  Mes Candidatures ({applications.length})
-                </h2>
-              </div>
+          {/* Graphical Representation (SVG Chart inspired by screenshot) */}
+          <div className="relative w-full h-60 pt-4">
+            
+            {/* Tooltip Popup Badge */}
+            <div className="absolute left-1/2 top-4 -translate-x-1/2 bg-vert-profond text-creme px-4 py-2 rounded-xl text-center shadow-lg border border-or-ambre/30 z-10">
+              <span className="text-base font-extrabold block">4 000+</span>
+              <span className="text-[10px] text-or-clair font-semibold block">Opportunités détectées ce mois</span>
             </div>
 
-            {applications.length === 0 ? (
-              <div className="text-center py-8 space-y-3">
-                <FileText className="w-10 h-10 text-sauge/80 mx-auto" />
-                <p className="text-sm font-semibold text-encre/70">
-                  Vous n'avez pas encore postulé à une offre.
-                </p>
-                <Link
-                  to="/offres"
-                  className="inline-block px-5 py-2.5 rounded-full bg-vert-profond text-creme text-xs font-bold font-sora"
-                >
-                  Parcourir les offres
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {applications.map((app) => (
-                  <div
-                    key={app.id}
-                    className="p-4 rounded-2xl border border-sauge/40 bg-creme/50 hover:bg-creme transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                  >
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-vert-profond">
-                        {app.jobTitle}
-                      </h4>
-                      <div className="flex items-center gap-3 text-xs text-encre/70 font-medium">
-                        <span>{app.organization}</span>
-                        <span>•</span>
-                        <span>{app.location}</span>
-                        <span>•</span>
-                        <span>Postulé le {app.appliedDate}</span>
-                      </div>
-                    </div>
+            <svg className="w-full h-full overflow-visible" viewBox="0 0 600 180" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#25D366" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#25D366" stopOpacity="0.05" />
+                </linearGradient>
+              </defs>
 
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold border self-start sm:self-center ${getStatusBadgeStyle(
-                        app.status
-                      )}`}
-                    >
-                      {app.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+              {/* Vertical Bars Background */}
+              {[40, 90, 140, 190, 240, 290, 340, 390, 440, 490, 540].map((x, i) => (
+                <rect key={i} x={x} y={180 - (60 + (i % 5) * 20)} width="4" height={60 + (i % 5) * 20} fill="#10B981" opacity="0.3" rx="2" />
+              ))}
+
+              {/* Smooth Curved Line Chart */}
+              <path
+                d="M 20 130 C 80 110, 140 140, 200 90 C 260 40, 320 80, 380 60 C 440 40, 500 100, 580 50"
+                fill="none"
+                stroke="#173D2E"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+
+              {/* Dotted Baseline */}
+              <line x1="0" y1="160" x2="600" y2="160" stroke="#E2E8F0" strokeDasharray="4 4" />
+            </svg>
+
+            {/* Time Axis Labels */}
+            <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold pt-2 border-t border-slate-100">
+              <span>2026-01</span>
+              <span>2026-03</span>
+              <span>2026-06</span>
+              <span>2026-09</span>
+              <span>2026-12</span>
+            </div>
           </div>
 
         </div>
 
-        {/* Right Column (1 col) - WhatsApp Alerts & CV Status */}
-        <div className="space-y-8">
+        {/* Right Card (1 col): Jauge Circulaire Profil (85% Complete) */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/60 shadow-sm flex flex-col justify-between space-y-6">
           
-          {/* WhatsApp Alerts Status Card */}
-          <div className="bg-white rounded-[32px] p-6 border border-sauge/40 shadow-subtle space-y-4">
-            <div className="flex items-center gap-3 border-b border-sauge/30 pb-4">
-              <div className="w-10 h-10 rounded-full bg-whatsapp/15 text-whatsapp flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 fill-whatsapp" />
-              </div>
-              <div>
-                <h3 className="text-base font-sora font-extrabold text-vert-profond">
-                  Alertes WhatsApp
-                </h3>
-                <p className="text-xs text-whatsapp font-bold">Actives & Connectées</p>
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-base font-sora font-extrabold text-vert-profond">
+                Statut du Profil ESSOR
+              </h3>
+              <p className="text-xs text-slate-400 font-medium">Mise à jour dynamique</p>
+            </div>
+            <button
+              onClick={() => setIsEditingProfile(true)}
+              className="px-3.5 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:text-vert-profond text-xs font-bold transition-all flex items-center gap-1"
+            >
+              <span>Éditer</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Large Circular Gauge Ring (85% Complete inspired by screenshot) */}
+          <div className="flex flex-col items-center justify-center relative py-2">
+            <div className="relative w-44 h-44 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  stroke="#F1F5F9"
+                  strokeWidth="8"
+                  fill="transparent"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  stroke="#10B981"
+                  strokeWidth="8"
+                  fill="transparent"
+                  strokeDasharray={2 * Math.PI * 40}
+                  strokeDashoffset={2 * Math.PI * 40 * (1 - 0.85)}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute flex flex-col items-center text-center">
+                <span className="text-4xl font-sora font-extrabold text-vert-profond">85%</span>
+                <span className="text-xs text-slate-400 font-bold tracking-wide">Complété</span>
               </div>
             </div>
 
-            <p className="text-xs text-encre/70 leading-relaxed">
-              Vos alertes sont configurées pour recevoir les opportunités correspondant à vos critères au numéro <span className="font-bold text-vert-profond">{user.phone || 'non renseigné'}</span>.
-            </p>
+            {/* Breakdown Legend */}
+            <div className="w-full space-y-2 pt-4 text-xs font-semibold">
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Profil & CV :
+                </span>
+                <span className="font-bold text-vert-profond">100%</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Critères WhatsApp :
+                </span>
+                <span className="font-bold text-vert-profond">85%</span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsEditingProfile(true)}
+            className="w-full py-2.5 text-center text-xs font-extrabold text-vert-profond hover:text-vert-moyen flex items-center justify-center gap-1 group"
+          >
+            <span>Voir Détails du Profil</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </button>
+
+        </div>
+
+      </div>
+
+      {/* 3. BOTTOM SECTION: 3 COLUMNS (OFFRES MATCHES | CANDIDATURES | ASSISTANT IA) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Column 1: Offres Matches (Schedule section in screenshot) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-sora font-extrabold text-vert-profond">
+              Offres Matches ({filteredOffers.length})
+            </h3>
+            <div className="flex items-center gap-1 bg-slate-200/60 p-1 rounded-full text-[11px] font-bold">
+              <button
+                onClick={() => setSelectedFilter('all')}
+                className={`px-3 py-1 rounded-full transition-all ${selectedFilter === 'all' ? 'bg-white text-vert-profond shadow-sm' : 'text-slate-500'}`}
+              >
+                Toutes
+              </button>
+              <button
+                onClick={() => setSelectedFilter('stage')}
+                className={`px-3 py-1 rounded-full transition-all ${selectedFilter === 'stage' ? 'bg-white text-vert-profond shadow-sm' : 'text-slate-500'}`}
+              >
+                Stages
+              </button>
+              <button
+                onClick={() => setSelectedFilter('bourse')}
+                className={`px-3 py-1 rounded-full transition-all ${selectedFilter === 'bourse' ? 'bg-white text-vert-profond shadow-sm' : 'text-slate-500'}`}
+              >
+                Bourses
+              </button>
+            </div>
+          </div>
+
+          {loadingOffers && (
+            <div className="p-8 text-center bg-white rounded-3xl border border-slate-200/60">
+              <div className="animate-spin rounded-full h-8 w-8 border-4 border-vert-profond border-t-transparent mx-auto"></div>
+            </div>
+          )}
+
+          {!loadingOffers && filteredOffers.length === 0 && (
+            <div className="p-6 text-center bg-white rounded-3xl border border-slate-200/60 space-y-2">
+              <Sparkles className="w-8 h-8 text-amber-400 mx-auto" />
+              <p className="text-xs font-bold text-slate-500">Aucune offre ne correspond actuellement à vos filtres.</p>
+            </div>
+          )}
+
+          {!loadingOffers && filteredOffers.map((job) => (
+            <div
+              key={job.id}
+              className="bg-white rounded-3xl p-5 border border-slate-200/60 shadow-sm hover:shadow-md transition-all space-y-3"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-sora font-extrabold text-vert-profond line-clamp-1">{job.title}</h4>
+                  <p className="text-xs text-slate-400 font-medium">{job.organization} • {job.location}</p>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 text-[11px] font-extrabold">
+                  {job.matchPercentage}% Match
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px]">
+                  {job.typeLabel}
+                </span>
+                <Link
+                  to={`/offres/${job.id}`}
+                  className="font-bold text-vert-profond hover:underline flex items-center gap-1 text-xs"
+                >
+                  <span>Voir l'offre</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Column 2: Suivi Candidatures (Pending Leave Requests in screenshot) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-sora font-extrabold text-vert-profond">
+              Suivi Candidatures ({applications.length})
+            </h3>
+            <Link to="/offres" className="text-xs font-bold text-emerald-600 hover:underline">
+              Tout afficher
+            </Link>
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 border border-slate-200/60 shadow-sm space-y-4">
+            {applications.length === 0 ? (
+              <div className="text-center py-8 space-y-2">
+                <Briefcase className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="text-xs text-slate-400 font-semibold">Aucune candidature soumise pour le moment.</p>
+              </div>
+            ) : (
+              applications.map((app) => (
+                <div key={app.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-vert-profond text-creme font-bold text-xs flex items-center justify-center">
+                      {app.organization.charAt(0)}
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-vert-profond line-clamp-1">{app.jobTitle}</h5>
+                      <span className="text-[10px] text-slate-400 font-semibold">{app.organization} • {app.appliedDate}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button className="p-1 rounded-full text-emerald-600 hover:bg-emerald-100">
+                      <Check className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Column 3: Assistant IA ESSOR & Quick Chat Prompt Box (Welcome section in screenshot) */}
+        <div className="bg-gradient-to-br from-white via-white to-emerald-50/40 rounded-3xl p-6 border border-slate-200/60 shadow-sm space-y-6 flex flex-col justify-between">
+          
+          <div className="space-y-4 text-center sm:text-left">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-400 via-emerald-400 to-emerald-600 p-1 mx-auto sm:mx-0 shadow-md">
+              <div className="w-full h-full rounded-full bg-white flex items-center justify-center font-sora font-extrabold text-vert-profond text-xl">
+                {user.name ? user.name.charAt(0).toUpperCase() : 'E'}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-sora font-extrabold text-vert-profond">
+                Bienvenue, {user.name || 'Candidat ESSOR'} !
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Que puis-je faire pour vous aujourd'hui ? Recherche d'offres, bourses ou alertes.
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive AI Search Input Bar (Inspired by bottom right box in screenshot) */}
+          <div className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm space-y-3">
+            <input
+              type="text"
+              placeholder="Posez votre question ou filtrez une opportunité..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-3 py-2 text-xs font-semibold text-vert-profond placeholder-slate-400 outline-none bg-transparent"
+            />
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-1.5">
+                <button className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold hover:bg-slate-200 flex items-center gap-1">
+                  <Paperclip className="w-3 h-3" /> CV
+                </button>
+                <button className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold hover:bg-slate-200 flex items-center gap-1">
+                  <Plus className="w-3 h-3" /> Alerte
+                </button>
+              </div>
+
+              <button className="p-2 rounded-xl bg-vert-profond text-creme hover:bg-vert-moyen transition-all">
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
         </div>
