@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { Link } from '../router/Router';
 import { JobType } from '../types';
-import { PlusCircle, CheckCircle2, MessageSquare, AlertCircle } from 'lucide-react';
+import { PlusCircle, CheckCircle2, MessageSquare, AlertCircle, Send } from 'lucide-react';
 import { EssorLogo } from '../components/EssorLogo';
 
 export const PublishOfferPage: React.FC = () => {
