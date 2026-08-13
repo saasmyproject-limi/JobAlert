@@ -15,21 +15,22 @@ export const EssorLogo: React.FC<EssorLogoProps> = ({
 }) => {
   // Size typography mapping
   const titleSizeClasses = {
-    sm: 'text-2xl',
-    md: 'text-3xl sm:text-4xl',
-    lg: 'text-5xl sm:text-6xl',
+    sm: 'text-xl',
+    md: 'text-2xl sm:text-3xl',
+    lg: 'text-4xl sm:text-5xl',
   };
 
   const sloganSizeClasses = {
-    sm: 'text-[9px]',
-    md: 'text-[11px] sm:text-[12.5px]',
-    lg: 'text-[14px] sm:text-[15px]',
+    sm: 'text-[8px]',
+    md: 'text-[9.5px] sm:text-[10.5px]',
+    lg: 'text-[12px] sm:text-[13px]',
   };
 
+  // Dimensions du dessin uniquement (SVG Icon)
   const iconSizes = {
-    sm: 44,
-    md: 58,
-    lg: 78,
+    sm: 52,
+    md: 76,
+    lg: 100,
   };
 
   const iconDim = iconSizes[size];
