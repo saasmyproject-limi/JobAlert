@@ -24,7 +24,7 @@ export const HeroSection: React.FC = () => {
 
           {/* Descriptive Subtitle */}
           <p className="text-base sm:text-lg text-encre/80 font-normal leading-relaxed max-w-2xl">
-            ESSOR scanne en continu les concours publics, bourses officielles et offres d'emploi au Cameroun. Recevez des alertes ciblées directement sur votre compte <span className="font-semibold text-vert-profond">WhatsApp</span> dès qu'une opportunité vous correspond.
+            ESSOR scanne en continu les concours publics, bourses officielles et offres d'emploi au Cameroun et en Afrique. Recevez des alertes ciblées par <span className="font-semibold text-vert-profond">Email, WhatsApp ou SMS</span> dès qu'une opportunité vous correspond.
           </p>
 
           {/* Action Buttons */}
@@ -48,7 +48,7 @@ export const HeroSection: React.FC = () => {
           {/* Small Sub-mention */}
           <div className="pt-2 flex items-center gap-2 text-xs sm:text-sm text-encre/70 font-medium">
             <CheckCircle2 className="w-4 h-4 text-vert-moyen shrink-0" />
-            <span>Sans frais à l'inscription · Alertes envoyées directement sur WhatsApp</span>
+            <span>Sans frais à l'inscription · Alertes Multicanal (Email, WhatsApp, SMS)</span>
           </div>
 
         </div>

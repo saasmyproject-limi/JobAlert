@@ -21,9 +21,9 @@ export const EssorLogo: React.FC<EssorLogoProps> = ({
   };
 
   const sloganSizeClasses = {
-    sm: 'text-[8px]',
-    md: 'text-[9.5px]',
-    lg: 'text-[12px]',
+    sm: 'text-[7.5px]',
+    md: 'text-[9px]',
+    lg: 'text-[11px]',
   };
 
   const iconSizes = {
@@ -40,7 +40,7 @@ export const EssorLogo: React.FC<EssorLogoProps> = ({
 
   return (
     <div className={`inline-flex items-center gap-3 select-none group ${className}`}>
-      {/* Sceau Badge Icon (Concept 3) */}
+      {/* Sceau Badge Icon (ESSOR Ascension) */}
       <div className="relative flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
         <svg
           width={iconDim}
@@ -102,29 +102,21 @@ export const EssorLogo: React.FC<EssorLogoProps> = ({
             fill="#FFFFFF"
             fillOpacity="0.9"
           />
-
-          {/* Cercle d'Alerte WhatsApp en haut à droite */}
-          <circle cx="39" cy="9" r="5" fill="#25D366" stroke="#ffffff" strokeWidth="1.5" />
-          <circle cx="39" cy="9" r="2" fill="#ffffff" />
         </svg>
       </div>
 
-      {/* Logotype Textuel + Slogan */}
+      {/* Logotype Textuel + Slogan Officiel ESSOR */}
       {variant !== 'icon-only' && (
         <div className="flex flex-col justify-center text-left">
           <div className="flex items-center leading-none">
             <span className={`font-sora font-extrabold tracking-tight ${titleSizeClasses[size]} ${esColorClass}`}>
               ES<span className="text-or-ambre">SOR</span>
             </span>
-            <span
-              className="w-2.5 h-2.5 rounded-full bg-whatsapp inline-block ml-1.5 shadow-sm animate-pulse"
-              title="Alertes WhatsApp Actives"
-            />
           </div>
 
           {showSlogan && (
-            <span className={`font-sora font-bold tracking-wider uppercase ${sloganSizeClasses[size]} ${sloganColorClass} leading-tight mt-1`}>
-              Emplois · Stages · Bourses
+            <span className={`font-sora font-semibold italic ${sloganSizeClasses[size]} ${sloganColorClass} leading-tight mt-1`}>
+              L'opportunité te trouve, avant que tu ailles la chercher
             </span>
           )}
         </div>

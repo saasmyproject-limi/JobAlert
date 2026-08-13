@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from '../router/Router';
 import { JobType } from '../types';
-import { MessageSquare, Upload, CheckCircle2, FileText, ArrowRight, ShieldCheck, Tag, Sparkles, AlertCircle, Mail } from 'lucide-react';
+import { MessageSquare, Upload, CheckCircle2, FileText, ArrowRight, ShieldCheck, Tag, Sparkles, AlertCircle, Mail, BellRing } from 'lucide-react';
 import { EssorLogo } from '../components/EssorLogo';
 import { parseCVFile } from '../utils/cvParser';
 
@@ -329,18 +329,18 @@ export const RegisterPage: React.FC = () => {
                 />
               </div>
 
-              {/* WhatsApp Box Notice (MANDATORY ALERT CHANNEL) */}
-              <div className="p-4 rounded-2xl bg-whatsapp/10 border-2 border-whatsapp/40 space-y-2">
+              {/* Alert Channel Notice (Email, WhatsApp, SMS) */}
+              <div className="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 space-y-2">
                 <div className="flex items-center gap-2 text-vert-profond font-sora font-extrabold text-sm">
-                  <MessageSquare className="w-4 h-4 text-whatsapp fill-whatsapp shrink-0" />
-                  <span>Canal d'alerte instantanée WhatsApp (Obligatoire)</span>
+                  <BellRing className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Canal d'alerte instantanée (Email, WhatsApp ou SMS)</span>
                 </div>
                 <p className="text-xs text-encre/80 leading-relaxed font-medium">
-                  JobAlert t'envoie tes alertes d'offres directement par message WhatsApp dès leur publication. Saisis ton numéro principal.
+                  ESSOR t'envoie tes alertes d'offres directement par Email, WhatsApp ou SMS dès qu'une opportunité correspond à tes critères.
                 </p>
                 <div>
                   <label className="block text-xs font-bold text-vert-profond mb-1">
-                    Numéro WhatsApp au format +237
+                    Numéro de téléphone / WhatsApp principal (+237)
                   </label>
                   <input
                     type="tel"

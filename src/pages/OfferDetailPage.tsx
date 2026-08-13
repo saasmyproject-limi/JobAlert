@@ -150,9 +150,9 @@ export const OfferDetailPage: React.FC = () => {
           </span>
 
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-whatsapp/15 text-vert-profond text-xs font-sora font-extrabold border border-whatsapp/30">
-              <Sparkles className="w-3.5 h-3.5 text-whatsapp fill-whatsapp" />
-              <span>{job.matchPercentage}% de correspondance WhatsApp</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-vert-profond text-xs font-sora font-extrabold border border-emerald-300">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
+              <span>{job.matchPercentage}% de correspondance</span>
             </span>
           </div>
         </div>
@@ -355,7 +355,7 @@ export const OfferDetailPage: React.FC = () => {
                 Candidature transmise !
               </h3>
               <p className="text-sm text-encre/70">
-                Votre profil et vos coordonnées ont été enregistrés pour cette opportunité. Vous recevrez le suivi directement sur votre WhatsApp.
+                Votre profil et vos coordonnées ont été enregistrés pour cette opportunité. Vous recevrez le suivi des alertes par Email, WhatsApp ou SMS.
               </p>
             </div>
 

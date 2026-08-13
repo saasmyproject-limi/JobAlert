@@ -23,8 +23,8 @@ export const HowItWorksSection: React.FC = () => {
     },
     {
       number: '04',
-      title: 'Tu reçois l\'alerte WhatsApp',
-      description: 'Dès qu\'un match dépasse ton seuil, une notification WhatsApp complète arrive avec le lien pour postuler.',
+      title: 'Tu reçois l\'alerte Multicanal',
+      description: 'Dès qu\'un match dépasse ton seuil, une notification par Email, WhatsApp ou SMS arrive avec le lien pour postuler.',
       icon: BellRing,
     },
   ];
