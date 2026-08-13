@@ -13,6 +13,8 @@ interface AuthContextType {
   user: UserProfile;
   session: Session | null;
   loading: boolean;
+  isLowDataMode: boolean;
+  toggleLowDataMode: () => void;
   applications: JobApplication[];
   jobsList: JobOffer[];
   login: (email: string, pass: string) => Promise<AuthResult>;
@@ -61,6 +63,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [jobsList, setJobsList] = useState<JobOffer[]>([]);
+  const [isLowDataMode, setIsLowDataMode] = useState<boolean>(() => {
+    return localStorage.getItem('essor_low_data_mode') === 'true';
+  });
+
+  const toggleLowDataMode = () => {
+    setIsLowDataMode((prev) => {
+      const next = !prev;
+      localStorage.setItem('essor_low_data_mode', String(next));
+      if (next) {
+        document.body.classList.add('low-data-mode');
+      } else {
+        document.body.classList.remove('low-data-mode');
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (isLowDataMode) {
+      document.body.classList.add('low-data-mode');
+    }
+  }, [isLowDataMode]);
 
   // Charge le profil utilisateur depuis Supabase
   const loadUserProfile = async (userId: string, userEmail: string) => {
@@ -357,6 +381,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         session,
         loading,
+        isLowDataMode,
+        toggleLowDataMode,
         applications,
         jobsList,
         login,

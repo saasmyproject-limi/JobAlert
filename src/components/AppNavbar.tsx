@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from '../router/Router';
 import { useAuth } from '../context/AuthContext';
-import { User, LogOut, Menu, X, PlusCircle, Briefcase, LayoutDashboard, LogIn } from 'lucide-react';
+import { User, LogOut, Menu, X, PlusCircle, Briefcase, LayoutDashboard, LogIn, Zap } from 'lucide-react';
 import { EssorLogo } from './EssorLogo';
 
 export const AppNavbar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isLowDataMode, toggleLowDataMode } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -83,6 +83,19 @@ export const AppNavbar: React.FC = () => {
 
         {/* Right Actions (Desktop) */}
         <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={toggleLowDataMode}
+            title="Activer/Désactiver le Mode Léger 2G/3G"
+            className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 ${
+              isLowDataMode
+                ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                : 'bg-white text-slate-600 border-sauge/60 hover:bg-sauge/20'
+            }`}
+          >
+            <Zap className={`w-3.5 h-3.5 ${isLowDataMode ? 'fill-white' : 'text-amber-500'}`} />
+            <span>{isLowDataMode ? 'Mode Léger (Actif)' : 'Mode 2G/3G'}</span>
+          </button>
+
           {user.isLoggedIn ? (
             <div className="flex items-center gap-2">
               <Link

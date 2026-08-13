@@ -20,6 +20,7 @@ export const PublishOfferPage: React.FC = () => {
   const [deadline, setDeadline] = useState('30 Septembre 2026');
   const [salary, setSalary] = useState('');
   const [isOfficial, setIsOfficial] = useState(false);
+  const [rccmNumber, setRccmNumber] = useState('');
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -291,6 +292,23 @@ export const PublishOfferPage: React.FC = () => {
                   className="w-full px-4 py-3 rounded-2xl border border-sauge/60 focus:border-vert-profond focus:ring-2 focus:ring-vert-profond/20 outline-none text-encre text-sm font-medium transition-all"
                 />
               </div>
+            </div>
+
+            {/* Recruiter Verification Field (RCCM) */}
+            <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-2">
+              <label className="block text-xs font-bold text-emerald-900">
+                Numéro RCCM / Registre du Commerce (Optionnel - Obtenir le Badge "Recruteur Vérifié")
+              </label>
+              <input
+                type="text"
+                placeholder="ex: RC/DLA/2026/B/12345 (Pour obtenir le badge officiel certifié)"
+                value={rccmNumber}
+                onChange={(e) => setRccmNumber(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-emerald-300 focus:border-vert-profond outline-none text-encre text-xs font-medium bg-white"
+              />
+              <p className="text-[10px] text-emerald-700 font-medium">
+                🛡️ La vérification de votre RCCM vous attribue le badge **Recruteur Vérifié ESSOR** pour rassurer les candidats.
+              </p>
             </div>
 
             {/* Submit Button */}
