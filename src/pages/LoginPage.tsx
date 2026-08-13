@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from '../router/Router';
 import { LogIn, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, MessageSquare } from 'lucide-react';
+import { EssorLogo } from '../components/EssorLogo';
 
 export const LoginPage: React.FC = () => {
   const { login, loginWithGoogle, loginWithWhatsApp } = useAuth();
