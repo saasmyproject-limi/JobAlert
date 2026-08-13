@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link, useLocation } from '../router/Router';
 import { JobOffer, JobType } from '../types';
 import { Building2, MapPin, Calendar, CheckCircle2, ExternalLink, ArrowLeft, Send, Sparkles, MessageSquare, Share2, AlertCircle } from 'lucide-react';
+import { AntiScamBanner } from '../components/AntiScamBanner';
 
 export const OfferDetailPage: React.FC = () => {
   const { pathname } = useLocation();
@@ -127,6 +128,9 @@ export const OfferDetailPage: React.FC = () => {
           <span>Retour à toutes les offres</span>
         </Link>
       </div>
+
+      {/* Anti-Scam Security Banner */}
+      <AntiScamBanner isRemoteOrInternational={job.location?.toLowerCase().includes('remote') || job.location?.toLowerCase().includes('international') || job.category?.toLowerCase().includes('remote') || true} />
 
       {/* Main Job Banner Card */}
       <div className="bg-white rounded-[32px] p-6 sm:p-10 border border-sauge/40 shadow-subtle space-y-6">

@@ -4,6 +4,7 @@ import { useNavigate, Link } from '../router/Router';
 import { JobType } from '../types';
 import { MessageSquare, Upload, CheckCircle2, FileText, ArrowRight, ShieldCheck, Tag, Sparkles, AlertCircle, Mail } from 'lucide-react';
 import { EssorLogo } from '../components/EssorLogo';
+import { parseCVFile } from '../utils/cvParser';
 
 export const RegisterPage: React.FC = () => {
   const { register, loginWithGoogle, loginWithWhatsApp } = useAuth();
@@ -34,6 +35,7 @@ export const RegisterPage: React.FC = () => {
     size: '1.4 MB'
   });
   const [isUploading, setIsUploading] = useState(false);
+  const [aiExtractionNotification, setAiExtractionNotification] = useState<string | null>(null);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -618,6 +620,13 @@ export const RegisterPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {aiExtractionNotification && (
+                  <div className="mt-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{aiExtractionNotification}</span>
+                  </div>
+                )}
               </div>
 
               {/* Form Navigation Buttons */}
