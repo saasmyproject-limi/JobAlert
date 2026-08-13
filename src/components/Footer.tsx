@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from '../router/Router';
 import { MessageSquare, Heart, Mail, MapPin, Users, HelpCircle } from 'lucide-react';
+import { EssorLogo } from './EssorLogo';
 
 export const Footer: React.FC = () => {
   return (
@@ -12,12 +13,9 @@ export const Footer: React.FC = () => {
           
           {/* Col 1: Brand & Mission */}
           <div className="space-y-4 md:col-span-1">
-            <div className="flex items-center gap-2">
-              <span className="font-sora font-extrabold text-2xl tracking-tight text-creme">
-                ES<span className="text-or-ambre">SOR</span>
-              </span>
-              <span className="w-2.5 h-2.5 rounded-full bg-whatsapp inline-block animate-pulse" />
-            </div>
+            <Link to="/" className="inline-block">
+              <EssorLogo variant="light" size="md" />
+            </Link>
             <p className="text-creme/70 text-xs leading-relaxed font-medium">
               1ère plateforme nationale d'alertes instantanées par WhatsApp pour les emplois formels, concours MINFOPRA, stages et bourses d'études au Cameroun.
             </p>

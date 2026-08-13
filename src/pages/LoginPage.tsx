@@ -74,6 +74,12 @@ export const LoginPage: React.FC = () => {
       
       {/* Header */}
       <div className="text-center space-y-3 mb-8">
+        <div className="flex justify-center mb-4">
+          <Link to="/">
+            <EssorLogo size="lg" />
+          </Link>
+        </div>
+
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-sauge/30 text-vert-profond text-xs font-bold border border-sauge">
           <LogIn className="w-3.5 h-3.5 text-vert-profond" />
           <span>Espace Candidat & Employeur</span>

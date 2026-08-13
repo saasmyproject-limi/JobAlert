@@ -1,0 +1,25 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <linearGradient id="sealBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0F5132" />
+      <stop offset="100%" stop-color="#064E3B" />
+    </linearGradient>
+  </defs>
+
+  {/* Sceau Hexagone */}
+  <path d="M24 3L42 12V36L24 45L6 36V12L24 3Z" fill="url(#sealBg)" stroke="url(#goldGradient)" stroke-width="2" stroke-linejoin="round" />
+
+  {/* Monogramme E */}
+  <path d="M15 32H31C32.1 32 32.7 30.7 31.9 29.9L28.5 26.5H15V32Z" fill="url(#goldGradient)" fill-opacity="0.85" />
+  <path d="M15 24H27C27.8 24 28.3 23 27.7 22.4L25.3 20H15V24Z" fill="url(#goldGradient)" />
+  <path d="M15 17.5V12H27L34 19L31.5 21.5L25 15H19.5V17.5H15Z" fill="url(#goldGradient)" />
+  <rect x="14" y="12" width="4.5" height="20" rx="1.5" fill="#FFFFFF" fill-opacity="0.9" />
+
+  {/* Alerte WhatsApp */}
+  <circle cx="39" cy="9" r="5" fill="#25D366" stroke="#ffffff" stroke-width="1.5" />
+  <circle cx="39" cy="9" r="2" fill="#ffffff" />
+</svg>

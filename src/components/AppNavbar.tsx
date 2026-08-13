@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from '../router/Router';
 import { useAuth } from '../context/AuthContext';
 import { User, LogOut, Menu, X, PlusCircle, Briefcase, LayoutDashboard, LogIn } from 'lucide-react';
+import { EssorLogo } from './EssorLogo';
 
 export const AppNavbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -25,17 +26,9 @@ export const AppNavbar: React.FC = () => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-creme/95 backdrop-blur-md border-b border-sauge/40 transition-all shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
-        {/* Logo ESSOR with WhatsApp Green Dot */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="relative flex items-center justify-center">
-            <span className="font-sora font-extrabold text-2xl tracking-tight text-vert-profond">
-              ES<span className="text-or-ambre">SOR</span>
-            </span>
-            <span 
-              className="w-2.5 h-2.5 rounded-full bg-whatsapp inline-block ml-1 shadow-sm animate-pulse" 
-              title="Alerte WhatsApp Active"
-            />
-          </div>
+        {/* Logo ESSOR Concept 3 */}
+        <Link to="/">
+          <EssorLogo size="md" />
         </Link>
 
         {/* Desktop Navigation Links */}

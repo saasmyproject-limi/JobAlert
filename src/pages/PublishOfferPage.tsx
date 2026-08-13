@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { Link } from '../router/Router';
 import { JobType } from '../types';
-import { PlusCircle, CheckCircle2, MessageSquare, ArrowRight, Building2, MapPin, Sparkles, Send, AlertCircle } from 'lucide-react';
+import { PlusCircle, CheckCircle2, MessageSquare, AlertCircle } from 'lucide-react';
+import { EssorLogo } from '../components/EssorLogo';
 
 export const PublishOfferPage: React.FC = () => {
   const { session } = useAuth();
@@ -18,6 +19,7 @@ export const PublishOfferPage: React.FC = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [deadline, setDeadline] = useState('30 Septembre 2026');
   const [salary, setSalary] = useState('');
+  const [isOfficial, setIsOfficial] = useState(false);
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +54,7 @@ export const PublishOfferPage: React.FC = () => {
         source: 'manual',
         moderation_status: 'en_attente',
         publisher_id: session?.user?.id || null,
+        is_official: isOfficial,
       });
 
       if (error) {
@@ -72,6 +75,12 @@ export const PublishOfferPage: React.FC = () => {
       
       {/* Header */}
       <div className="text-center space-y-3">
+        <div className="flex justify-center mb-4">
+          <Link to="/">
+            <EssorLogo size="lg" />
+          </Link>
+        </div>
+
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-or-clair/30 border border-or-ambre/40 text-vert-profond text-xs sm:text-sm font-bold">
           <PlusCircle className="w-4 h-4 text-vert-profond" />
           <span>Espace Recruteurs, Entreprises & Particuliers</span>

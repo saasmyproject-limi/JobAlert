@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from '../router/Router';
 import { JobType } from '../types';
 import { MessageSquare, Upload, CheckCircle2, FileText, ArrowRight, ShieldCheck, Tag, Sparkles, AlertCircle, Mail } from 'lucide-react';
+import { EssorLogo } from '../components/EssorLogo';
 
 export const RegisterPage: React.FC = () => {
   const { register, loginWithGoogle, loginWithWhatsApp } = useAuth();
