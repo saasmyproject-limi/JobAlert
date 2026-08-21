@@ -12,6 +12,7 @@
     "scrape:bourses": "node scripts/scholarships_scraper.js",
     "scrape:stages": "node scripts/internships_informal_scraper.js",
     "scrape:remote": "node scripts/remote_jobs_aggregator.js",
+    "scrape:local": "node scripts/local_jobs_aggregator.js",
     "scrape:daily": "node scripts/auto_cron_runner.js --run-now"
   },
   "dependencies": {

@@ -19,6 +19,10 @@ export interface JobOffer {
   salary?: string;
   postedDate: string;
   isUrgent?: boolean;
+  source?: string;
+  city?: string;
+  contractType?: string;
+  isExpired?: boolean;
 }
 
 export interface UserProfile {

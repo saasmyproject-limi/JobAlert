@@ -130,6 +130,17 @@ export async function runInternshipsInformalScraper() {
   let added = 0;
   for (const offer of OFFICIAL_INTERNSHIPS_AND_INFORMAL) {
     try {
+      const checkRes = await fetch(`${SUPABASE_URL}/rest/v1/offers?title=eq.${encodeURIComponent(offer.title)}&organization=eq.${encodeURIComponent(offer.organization)}`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      if (checkRes.ok) {
+        const existing = await checkRes.json();
+        if (Array.isArray(existing) && existing.length > 0) {
+          console.log(`ℹ️ [${offer.organization}] Offre stage/informel déjà existante : ${offer.title}`);
+          continue;
+        }
+      }
+
       const response = await fetch(`${SUPABASE_URL}/rest/v1/offers`, {
         method: 'POST',
         headers: {

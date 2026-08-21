@@ -156,6 +156,18 @@ export async function runMasterScraper() {
   let added = 0;
   for (const offer of OFFICIAL_SCRAPED_OFFERS) {
     try {
+      // Check existing
+      const checkRes = await fetch(`${SUPABASE_URL}/rest/v1/offers?title=eq.${encodeURIComponent(offer.title)}&organization=eq.${encodeURIComponent(offer.organization)}`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      if (checkRes.ok) {
+        const existing = await checkRes.json();
+        if (Array.isArray(existing) && existing.length > 0) {
+          console.log(`ℹ️ [${offer.organization}] Offre déjà existante sur ESSOR : ${offer.title}`);
+          continue;
+        }
+      }
+
       const response = await fetch(`${SUPABASE_URL}/rest/v1/offers`, {
         method: 'POST',
         headers: {
