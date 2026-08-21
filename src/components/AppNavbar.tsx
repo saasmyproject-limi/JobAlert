@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from '../router/Router';
 import { useAuth } from '../context/AuthContext';
-import { User, LogOut, Menu, X, PlusCircle, Briefcase, LayoutDashboard, LogIn, Zap } from 'lucide-react';
+import { User, LogOut, Menu, X, PlusCircle, Briefcase, LayoutDashboard, LogIn, Zap, Globe } from 'lucide-react';
 import { EssorLogo } from './EssorLogo';
 
 export const AppNavbar: React.FC = () => {
@@ -67,15 +67,15 @@ export const AppNavbar: React.FC = () => {
           </Link>
 
           <Link 
-            to="/guide-freelance" 
+            to="/remote-jobs" 
             className={`transition-colors py-1 px-3 rounded-full flex items-center gap-1.5 ${
-              isActive('/guide-freelance') 
+              isActive('/remote-jobs') 
                 ? 'bg-vert-profond/10 text-vert-profond font-semibold'
                 : 'hover:text-vert-profond hover:bg-sauge/20'
             }`}
           >
-            <Zap className="w-4 h-4 text-amber-500" />
-            <span>Guide Freelance</span>
+            <Globe className="w-4 h-4 text-emerald-600" />
+            <span>Remote Jobs</span>
           </Link>
 
           {user.isLoggedIn && (
@@ -200,6 +200,16 @@ export const AppNavbar: React.FC = () => {
           >
             <PlusCircle className="w-4 h-4 text-or-ambre" />
             <span>Publier une offre</span>
+          </Link>
+          <Link
+            to="/remote-jobs"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm ${
+              isActive('/remote-jobs') ? 'bg-vert-profond text-creme font-semibold' : 'text-encre hover:bg-sauge/20'
+            }`}
+          >
+            <Globe className="w-4 h-4 text-emerald-600" />
+            <span>Remote Jobs</span>
           </Link>
 
           {user.isLoggedIn ? (

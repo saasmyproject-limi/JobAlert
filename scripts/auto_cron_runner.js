@@ -7,6 +7,7 @@
 import { runMasterScraper } from './master_scraper.js';
 import { runScholarshipsScraper } from './scholarships_scraper.js';
 import { runInternshipsInformalScraper } from './internships_informal_scraper.js';
+import { runRemoteJobsAggregator } from './remote_jobs_aggregator.js';
 
 export async function runAllScrapers() {
   console.log('⏰ ===================================================');
@@ -22,6 +23,9 @@ export async function runAllScrapers() {
 
     console.log('3️⃣ Phase 3 : Scraping des stages & secteur informel...');
     await runInternshipsInformalScraper();
+
+    console.log('4️⃣ Phase 4 : Agrégation des offres Remote Internationales (We Work Remotely, Remotive, RemoteOK, Jobicy, Himalayas, etc.)...');
+    await runRemoteJobsAggregator();
 
     console.log('✅ ===================================================');
     console.log('🎉 TOUTES LES OFFRES ONT ÉTÉ SYNCHRONISÉES AVEC SUCCÈS SUR ESSOR !');

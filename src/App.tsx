@@ -12,7 +12,7 @@ import { OffersListPage } from './pages/OffersListPage';
 import { OfferDetailPage } from './pages/OfferDetailPage';
 import { PublishOfferPage } from './pages/PublishOfferPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { FreelanceGuidePage } from './pages/FreelanceGuidePage';
+import { RemoteJobsPage } from './pages/RemoteJobsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -56,8 +56,8 @@ function RouterSwitch() {
       case '/offres':
       case '/offres/':
         return <OffersListPage />;
-      case '/guide-freelance':
-        return <FreelanceGuidePage />;
+      case '/remote-jobs':
+        return <RemoteJobsPage />;
       case '/publier':
         return (
           <ProtectedRoute>

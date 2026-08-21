@@ -51,3 +51,23 @@ export interface FilterState {
   type: JobType | 'all';
   location: string;
 }
+
+export type RemoteJobLocationStatus = 'eligible' | 'restricted' | 'manual_check';
+
+export interface RemoteJob {
+  id: string;
+  title: string;
+  company: string;
+  source: string;
+  sourceUrl: string;
+  locationRaw: string;
+  isAfricaEligible: boolean;
+  locationStatus: RemoteJobLocationStatus;
+  category: string;
+  tags: string[];
+  publishedAt: string;
+  fetchedAt: string;
+  salaryRaw?: string;
+  description?: string;
+}
+
