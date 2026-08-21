@@ -73,5 +73,16 @@ export interface RemoteJob {
   fetchedAt: string;
   salaryRaw?: string;
   description?: string;
+  typeOffreFinal?: 'remote_afrique' | 'relocation' | 'aucun' | 'a_verifier';
+  eligibleRemoteAfrique?: boolean | null;
+  confidenceRemote?: 'haute' | 'moyenne' | 'faible';
+  justificationRemote?: string;
+  relocationDisponible?: boolean;
+  confidenceRelocation?: 'haute' | 'moyenne' | 'faible';
+  justificationRelocation?: string;
+  paysDestinationRelocation?: string | null;
+  filtreRegexStatut?: 'exclu' | 'inclus' | 'ambigu';
+  filtreRegexMotif?: string | null;
 }
+
 
