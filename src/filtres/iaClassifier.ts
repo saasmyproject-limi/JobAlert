@@ -1,3 +1,5 @@
+declare const process: any;
+
 export interface ResultatClassificationIA {
   eligible_remote_afrique: boolean | null;
   confidence_remote: "haute" | "moyenne" | "faible";
