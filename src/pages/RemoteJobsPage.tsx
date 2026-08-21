@@ -36,6 +36,8 @@ export const RemoteJobsPage: React.FC = () => {
       const { data, error: fetchErr } = await supabase
         .from('remote_jobs')
         .select('*')
+        .neq('type_offre_final', 'aucun')
+        .or('eligible_remote_afrique.eq.true,relocation_disponible.eq.true')
         .order('published_at', { ascending: false });
 
       if (fetchErr) throw fetchErr;

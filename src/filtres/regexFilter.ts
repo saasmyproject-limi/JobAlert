@@ -11,6 +11,8 @@ const EXCLUSIONS: { categorie: string; regex: RegExp }[] = [
   { categorie: "UK only", regex: /\b(UK[- ]?based|United Kingdom only|must be based in the UK)\b/i },
   { categorie: "Canada only", regex: /\b(Canada only|must reside in Canada|Canadian residents only)\b/i },
   { categorie: "EU only", regex: /\b(EU[- ]?based|EU residents only|must be (located|based) in the EU|EEA citizens? only)\b/i },
+  { categorie: "Zone restreinte Amérique/Europe/APAC", regex: /\b(North America|US\/Canada|EU\/UK|Europe only|Americas only|APAC only|LATAM only|Asia[- ]?Pacific only)\b/i },
+  { categorie: "Liste pays restreinte", regex: /\b(open only to residents of|available in the following countries|candidates located in|only hiring in)\b/i },
   { categorie: "Autorisation travail", regex: /\b(must be authorized to work in|work authorization required for|citizenship required)\b/i },
   { categorie: "Fuseau horaire", regex: /\b(EST|PST|CST|CET|GMT[+-]?\d?)\s?(timezone|time zone|hours?)\b/i },
 ];
@@ -25,6 +27,14 @@ const INCLUSIONS: { categorie: string; regex: RegExp }[] = [
 
 export function filtrerParRegex(titre: string, description: string): MatchRegex {
   const texte = `${titre}\n${description}`;
+
+  // Vérification si la localisation liste explicitement des régions hors Afrique sans mentionner Worldwide / Afrique / EMEA
+  const isGlobalMentioned = /\b(worldwide|anywhere|global|africa|cameroun|cameroon|emea)\b/i.test(texte);
+  const containsRestrictedRegions = /\b(LATAM|Americas|APAC|Asia[- ]?Pacific|Europe|USA|Canada|Israel)\b/i.test(texte);
+  
+  if (containsRestrictedRegions && !isGlobalMentioned) {
+    return { statut: "exclu", motif: "Zone géographique restreinte sans mention d'ouverture globale/Afrique", categorie: "Restriction régionale hors Afrique" };
+  }
 
   for (const { categorie, regex } of EXCLUSIONS) {
     if (regex.test(texte)) {
