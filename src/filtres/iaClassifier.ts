@@ -1,3 +1,5 @@
+declare const process: any;
+
 export interface ResultatClassificationIA {
   eligible_remote_afrique: boolean;
   confidence_remote: "haute" | "moyenne" | "faible";
@@ -95,7 +97,17 @@ export async function classifierOffre(
   description: string,
   locationRaw: string = ''
 ): Promise<ResultatClassificationIA> {
-  const apiKey = (typeof process !== 'undefined' && process.env ? (process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY) : null);
+  let apiKey: string | null = null;
+  try {
+    if (typeof process !== 'undefined' && process?.env) {
+      apiKey = process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY || null;
+    }
+    if (!apiKey && typeof import.meta !== 'undefined' && (import.meta as any).env) {
+      apiKey = (import.meta as any).env.VITE_ANTHROPIC_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY || null;
+    }
+  } catch (e) {
+    apiKey = null;
+  }
 
   if (!apiKey) {
     return classifierHeuristique(titre, entreprise, description, locationRaw);
