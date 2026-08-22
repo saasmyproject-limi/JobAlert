@@ -41,7 +41,8 @@ export async function testBatchClassification() {
     const classification = await classifierOffreComplete({
       titre: offer.title,
       entreprise: offer.company,
-      description: `${offer.location_raw || ''} ${offer.description || ''} ${(offer.tags || []).join(' ')}`
+      description: `${offer.description || ''} ${(offer.tags || []).join(' ')}`,
+      location_raw: offer.location_raw || ''
     });
 
     console.log(`\n[${i + 1}/${offers.length}] "${offer.title}" (${offer.company})`);

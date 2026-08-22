@@ -1,13 +1,15 @@
 /**
  * ESSOR Pipeline Classifier Complete (Node.js ESM)
+ * Classification en 2 étapes (Regex Pre-filter + IA Classifier)
  */
 import { filtrerParRegex } from "../filtres/regexFilter.js";
 import { classifierOffre } from "../filtres/iaClassifier.js";
 
 export async function classifierOffreComplete(offre) {
-  const regex = filtrerParRegex(offre.titre, offre.description);
+  const locationRaw = offre.location_raw || offre.location || '';
+  const regex = filtrerParRegex(offre.titre, offre.description, locationRaw);
 
-  // Exclu par regex -> on rejette direct, pas d'appel IA
+  // Exclu par regex -> on rejette direct, aucun appel IA nécessaire
   if (regex.statut === "exclu") {
     return {
       eligible_remote_afrique: false,
@@ -23,8 +25,8 @@ export async function classifierOffreComplete(offre) {
     };
   }
 
-  // Inclus ou ambigu -> on passe par l'IA pour confirmer/affiner
-  const ia = await classifierOffre(offre.titre, offre.entreprise, offre.description);
+  // Inclus ou ambigu -> qualification / confirmation par le classificateur IA
+  const ia = await classifierOffre(offre.titre, offre.entreprise, offre.description, locationRaw);
 
   return {
     ...ia,

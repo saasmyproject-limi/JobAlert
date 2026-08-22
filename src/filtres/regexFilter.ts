@@ -6,47 +6,73 @@ export interface MatchRegex {
   categorie: string | null;
 }
 
-const EXCLUSIONS: { categorie: string; regex: RegExp }[] = [
-  { categorie: "US only", regex: /\b(US[- ]?based|United States only|U\.S\. citizens? only|must reside in the (US|United States))\b/i },
-  { categorie: "UK only", regex: /\b(UK[- ]?based|United Kingdom only|must be based in the UK)\b/i },
-  { categorie: "Canada only", regex: /\b(Canada only|must reside in Canada|Canadian residents only)\b/i },
-  { categorie: "EU only", regex: /\b(EU[- ]?based|EU residents only|must be (located|based) in the EU|EEA citizens? only)\b/i },
-  { categorie: "Zone restreinte Amérique/Europe/APAC", regex: /\b(North America|US\/Canada|EU\/UK|Europe only|Americas only|APAC only|LATAM only|Asia[- ]?Pacific only)\b/i },
-  { categorie: "Liste pays restreinte", regex: /\b(open only to residents of|available in the following countries|candidates located in|only hiring in)\b/i },
-  { categorie: "Autorisation travail", regex: /\b(must be authorized to work in|work authorization required for|citizenship required)\b/i },
-  { categorie: "Fuseau horaire", regex: /\b(EST|PST|CST|CET|GMT[+-]?\d?)\s?(timezone|time zone|hours?)\b/i },
-];
-
-const INCLUSIONS: { categorie: string; regex: RegExp }[] = [
-  { categorie: "Visa sponsorship", regex: /\b(visa sponsorship|we sponsor visas?|sponsorship (available|provided))\b/i },
-  { categorie: "Relocation", regex: /\b(relocation (package|assistance|provided|covered)|we (cover|provide) relocation)\b/i },
-  { categorie: "Permis de travail fourni", regex: /\bwork permit (provided|will be provided|sponsored)\b/i },
-  { categorie: "Logement/billet couvert", regex: /\b(accommodation provided|flight(s)? (covered|paid|provided)|travel (costs|expenses) covered)\b/i },
-  { categorie: "Ouvert Afrique explicite", regex: /\b(open to (candidates|applicants) (worldwide|globally|from Africa)|remote[- ]?(anywhere|worldwide|global))\b/i },
-];
-
-export function filtrerParRegex(titre: string, description: string): MatchRegex {
-  const texte = `${titre}\n${description}`;
-
-  // Vérification si la localisation liste explicitement des régions hors Afrique sans mentionner Worldwide / Afrique / EMEA
-  const isGlobalMentioned = /\b(worldwide|anywhere|global|africa|cameroun|cameroon|emea)\b/i.test(texte);
-  const containsRestrictedRegions = /\b(LATAM|Americas|APAC|Asia[- ]?Pacific|Europe|USA|Canada|Israel)\b/i.test(texte);
+const EXCLUSIONS_GEOGRAPHIQUES = [
+  // Amérique du Nord & US
+  /\b(US|USA|United States|U\.S\.A?|Canada|North America|Americas)[- ]?(only|based|residents?|citizens?|applicants?|timezone)\b/i,
+  /\bmust (reside|be located|live|be based|be working) in (the\s+)?(US|USA|United States|Canada|North America|Americas)\b/i,
+  /\b(Remote\s*[-–—:]\s*(US|USA|United States|Canada|North America|Americas))\b/i,
   
-  if (containsRestrictedRegions && !isGlobalMentioned) {
-    return { statut: "exclu", motif: "Zone géographique restreinte sans mention d'ouverture globale/Afrique", categorie: "Restriction régionale hors Afrique" };
+  // Europe & UK
+  /\b(UK|United Kingdom|EU|Europe|EEA|European Union)[- ]?(only|based|residents?|citizens?|applicants?)\b/i,
+  /\bmust (reside|be located|live|be based) in (the\s+)?(UK|United Kingdom|EU|Europe|EEA|Germany|France|Spain|Netherlands|Poland|Italy|Sweden|Switzerland)\b/i,
+  /\b(Remote\s*[-–—:]\s*(UK|United Kingdom|EU|Europe|EEA|Germany|France|Spain))\b/i,
+
+  // Autres zones restreintes
+  /\b(LATAM|APAC|Asia[- ]?Pacific|Australia|New Zealand|NZ)[- ]?(only|based|residents?)\b/i,
+  /\b(open only to residents of|only hiring in|candidates located in|must be physically located in)\b/i,
+  
+  // Exigences légales / Citoyenneté
+  /\b(must be (legally\s+)?authorized to work in|work authorization required for|US citizen|Green Card|EU citizenship required)\b/i,
+  /\b(sponsorship (is )?not (available|provided|offered)|no visa sponsorship|we (cannot|do not) sponsor|cannot offer visa|no relocation)\b/i,
+];
+
+const INCLUSIONS_RELOCATION = [
+  /\b(visa sponsorship|we sponsor visas?|sponsorship (available|provided)|work permit (provided|sponsored))\b/i,
+  /\b(relocation (package|assistance|provided|covered)|we (cover|provide) relocation|accommodation provided|flight(s)? (covered|paid|provided)|travel (costs|expenses) covered)\b/i,
+];
+
+const INCLUSIONS_WORLDWIDE_EXPLICIT = [
+  /\b(open to (candidates|applicants) (worldwide|globally|from Africa|from Cameroon))\b/i,
+  /\b(remote (anywhere|worldwide)|work from anywhere|anywhere in the world)\b/i,
+  /\b(work from home (anywhere|worldwide))\b/i,
+];
+
+const NON_AFRICAN_LOCATION_RAW = [
+  /\b(United States|USA|\bUS\b|Canada|United Kingdom|\bUK\b|Germany|France|Spain|Italy|Netherlands|Australia|Brazil|India|Israel|Poland|Sweden|Switzerland|Singapore|Europe|Americas|North America|LATAM|APAC|EMEA)\b/i
+];
+
+export function filtrerParRegex(titre: string, description: string, locationRaw: string = ''): MatchRegex {
+  const texte = `${titre || ''}\n${locationRaw || ''}\n${description || ''}`;
+
+  // 1. Visa Sponsorship / Relocation explicite positif
+  const hasNegativeSponsorship = /\b(no (visa )?sponsorship|sponsorship (is )?not (available|provided|offered)|cannot sponsor|will not sponsor|no relocation)\b/i.test(texte);
+  const hasPositiveRelocation = INCLUSIONS_RELOCATION.some(regex => regex.test(texte));
+
+  if (hasPositiveRelocation && !hasNegativeSponsorship) {
+    return { statut: "inclus", motif: "Relocation / Visa Sponsorship explicite", categorie: "Relocation" };
   }
 
-  for (const { categorie, regex } of EXCLUSIONS) {
+  // 2. Exclusions géographiques strictes
+  for (const regex of EXCLUSIONS_GEOGRAPHIQUES) {
     if (regex.test(texte)) {
-      return { statut: "exclu", motif: regex.source, categorie };
+      return { statut: "exclu", motif: regex.source, categorie: "Restriction géographique hors Afrique" };
     }
   }
 
-  for (const { categorie, regex } of INCLUSIONS) {
-    if (regex.test(texte)) {
-      return { statut: "inclus", motif: regex.source, categorie };
-    }
+  // 3. Localisation brute hors Afrique sans Worldwide explicite dans location_raw
+  const isExplicitWorldwideLoc = /\b(worldwide|anywhere|africa|cameroon|cameroun)\b/i.test(locationRaw || '');
+  const isNonAfricanLoc = NON_AFRICAN_LOCATION_RAW.some(regex => regex.test(locationRaw || ''));
+
+  if (isNonAfricanLoc && !isExplicitWorldwideLoc) {
+    return { statut: "exclu", motif: `Localisation restreinte hors Afrique (${locationRaw})`, categorie: "Restriction régionale" };
   }
 
+  // 4. Worldwide / Africa explicite
+  const isGlobalExplicitInDesc = INCLUSIONS_WORLDWIDE_EXPLICIT.some(regex => regex.test(texte));
+  if (isGlobalExplicitInDesc) {
+    return { statut: "inclus", motif: "Remote Worldwide / Afrique explicite", categorie: "Remote Afrique" };
+  }
+
+  // 5. Autrement -> ambigu
   return { statut: "ambigu", motif: null, categorie: null };
 }

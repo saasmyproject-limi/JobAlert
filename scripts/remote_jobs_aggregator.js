@@ -26,7 +26,8 @@ async function processAndSaveOffer(offer) {
     const classification = await classifierOffreComplete({
       titre: offer.title,
       entreprise: offer.company,
-      description: `${offer.location_raw || ''} ${offer.description || ''} ${(offer.tags || []).join(' ')}`
+      description: `${offer.description || ''} ${(offer.tags || []).join(' ')}`,
+      location_raw: offer.location_raw || ''
     });
 
     if (classification.type_offre_final === 'aucun') {

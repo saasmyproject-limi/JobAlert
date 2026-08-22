@@ -10,8 +10,11 @@ export async function classifierOffreComplete(offre: {
   titre: string;
   entreprise: string;
   description: string;
+  location_raw?: string;
+  location?: string;
 }): Promise<ResultatClassificationComplete> {
-  const regex = filtrerParRegex(offre.titre, offre.description);
+  const locationRaw = offre.location_raw || offre.location || '';
+  const regex = filtrerParRegex(offre.titre, offre.description, locationRaw);
 
   // Exclu par regex -> on rejette direct, pas d'appel IA
   if (regex.statut === "exclu") {
@@ -29,8 +32,8 @@ export async function classifierOffreComplete(offre: {
     };
   }
 
-  // Inclus ou ambigu -> on passe par l'IA pour confirmer/affiner
-  const ia = await classifierOffre(offre.titre, offre.entreprise, offre.description);
+  // Inclus ou ambigu -> qualification / confirmation par l'IA
+  const ia = await classifierOffre(offre.titre, offre.entreprise, offre.description, locationRaw);
 
   return {
     ...ia,

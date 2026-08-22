@@ -1,7 +1,5 @@
-declare const process: any;
-
 export interface ResultatClassificationIA {
-  eligible_remote_afrique: boolean | null;
+  eligible_remote_afrique: boolean;
   confidence_remote: "haute" | "moyenne" | "faible";
   justification_remote: string;
   relocation_disponible: boolean;
@@ -11,51 +9,48 @@ export interface ResultatClassificationIA {
   type_offre_final: "remote_afrique" | "relocation" | "aucun";
 }
 
-const PROMPT_SYSTEME = `Tu es un classificateur expert en éligibilité géographique pour offres d'emploi, spécialisé dans le marché africain.
+const PROMPT_SYSTEME = `Tu es un classificateur ultra-strict d'éligibilité géographique pour la plateforme ESSOR au Cameroun.
 
-Tu reçois le titre et la description complète d'une offre d'emploi. Ta tâche est de déterminer :
-1. Si cette offre est réellement accessible à un candidat physiquement basé n'importe où en Afrique
-2. Si l'offre implique une relocation/visa pris en charge par l'employeur
+Tu reçois le titre, l'entreprise, la localisation brute et la description d'une offre d'emploi.
 
-RÈGLES D'ANALYSE :
+RÈGLE D'OR :
+Une offre ne peut être retenue que sous 2 conditions strictly exclusives :
 
-Pour le REMOTE :
-- Une offre "remote" n'est éligible que si aucune restriction géographique n'exclut l'Afrique
-- Cherche activement les restrictions implicites : fuseaux horaires imposés (ex: "must overlap 9am-5pm EST" exclut de facto un candidat en Afrique de l'Ouest/Est selon le cas — calcule le chevauchement), zones autorisées listées ("US/Canada only", "EU residents", "UK-based"), exigences d'autorisation de travail dans un pays précis, exigences de citoyenneté
-- Une offre "remote-first" ou "hybrid" avec un bureau physique hors Afrique n'est PAS éligible sauf mention explicite contraire
-- Si la description ne précise AUCUNE restriction géographique et parle de "remote" ou "work from anywhere", considère-la éligible mais avec confidence modérée
-- Les fuseaux horaires africains vont de UTC+0 à UTC+3 — utilise ça pour évaluer le chevauchement avec les exigences horaires mentionnées
+1. TYPE 'remote_afrique' :
+- L'offre peut être réalisée à 100% à distance par un candidat vivant physiquement au Cameroun (ou n'importe où en Afrique).
+- REJET OBLIGATOIRE (type_offre_final = 'aucun') si l'offre exige d'être basé physiquement aux USA, Canada, Europe, UK, Amérique du Nord, LATAM, APAC, ou dans un pays spécifique hors Afrique.
+- REJET OBLIGATOIRE si l'offre exige une autorisation de travail locale (ex: US work authorization, EU residency, Green Card) sans fournir de visa.
+- REJET OBLIGATOIRE si un chevauchement horaire strict (EST/PST/CST/CET) rend le poste impraticable depuis l'Afrique (UTC+0 à UTC+3) sans flexibilité.
 
-Pour la RELOCATION :
-- Cherche des mentions explicites : "visa sponsorship", "relocation package/assistance", "work permit provided", "accommodation provided", "flight/travel covered", "we sponsor visas"
-- Ne classe PAS comme relocation une simple mention "must be willing to relocate" sans précision de prise en charge
-- Secteurs fréquents : hôtellerie-restauration, santé/soins infirmiers, BTP, agriculture saisonnière, aide à domicile
+2. TYPE 'relocation' :
+- L'offre est basée à l'étranger (présentiel ou hybride), MAIS l'employeur prend EXPLICITEMENT en charge le visa de travail, le permis de travail, le billet d'avion ou le logement (relocation package / visa sponsorship).
+- REJET OBLIGATOIRE si l'offre mentionne simplement "must be willing to relocate" SANS prise en charge explicite par l'employeur, ou précise "no visa sponsorship" / "cannot sponsor visas".
+
+SI L'OFFRE NE REMPLIT NI LA CONDITION 1 NI LA CONDITION 2, TU DOIS IMPÉRATIVEMENT RÉPONDRE AVEC type_offre_final = "aucun".
 
 Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, selon ce schéma exact :
 
 {
-  "eligible_remote_afrique": true,
-  "confidence_remote": "haute",
-  "justification_remote": "citation ou résumé court",
-  "relocation_disponible": false,
-  "confidence_relocation": "faible",
-  "justification_relocation": "résumé court",
-  "pays_destination_relocation": null,
-  "type_offre_final": "remote_afrique"
+  "eligible_remote_afrique": true | false,
+  "confidence_remote": "haute" | "moyenne" | "faible",
+  "justification_remote": "citation ou résumé court en français",
+  "relocation_disponible": true | false,
+  "confidence_relocation": "haute" | "moyenne" | "faible",
+  "justification_relocation": "citation ou résumé court en français",
+  "pays_destination_relocation": "nom du pays si relocation, sinon null",
+  "type_offre_final": "remote_afrique" | "relocation" | "aucun"
 }`;
 
-/**
- * Analyse heuristique déterministe intelligente (utilisée si aucune clé API d'IA externe n'est configurée)
- */
-function classifierHeuristique(titre: string, entreprise: string, description: string): ResultatClassificationIA {
-  const text = `${titre}\n${entreprise}\n${description}`.toLowerCase();
+function classifierHeuristique(titre: string, entreprise: string, description: string, locationRaw: string = ''): ResultatClassificationIA {
+  const text = `${titre || ''}\n${entreprise || ''}\n${locationRaw || ''}\n${description || ''}`.toLowerCase();
 
-  // Relocation detection
-  const hasVisa = /visa sponsorship|sponsor visas?|work permit (provided|sponsored)/i.test(text);
-  const hasRelocation = /relocation (package|assistance|provided|covered)|accommodation provided|flight(s)? (covered|paid|provided)/i.test(text);
+  const hasNegativeVisa = /no (visa )?sponsorship|sponsorship (is )?not (available|provided|offered)|cannot sponsor|will not sponsor|no relocation/i.test(text);
+
+  const hasVisa = !hasNegativeVisa && /visa sponsorship|sponsor visas?|work permit (provided|sponsored)/i.test(text);
+  const hasRelocation = !hasNegativeVisa && /relocation (package|assistance|provided|covered)|accommodation provided|flight(s)? (covered|paid|provided)/i.test(text);
   
   let countryMatch: string | null = null;
-  const countries = ['Dubai', 'UAE', 'Qatar', 'Saudi Arabia', 'France', 'Canada', 'Germany', 'Germany', 'USA', 'UK', 'Kuweït', 'Oman'];
+  const countries = ['Dubai', 'UAE', 'Qatar', 'Saudi Arabia', 'France', 'Canada', 'Germany', 'USA', 'UK', 'Kuweït', 'Oman', 'Belgium', 'Italy'];
   for (const c of countries) {
     if (text.includes(c.toLowerCase())) {
       countryMatch = c;
@@ -65,31 +60,31 @@ function classifierHeuristique(titre: string, entreprise: string, description: s
 
   const isRelocation = hasVisa || hasRelocation;
 
-  // Remote Africa detection
-  const hasExclusion = /us only|usa only|uk only|canada only|eu residents|must be authorized to work in|must reside in/i.test(text);
-  const hasExplicitAfrica = /worldwide|anywhere|global|africa|cameroon|sub-saharan|emea/i.test(text);
+  const hasExclusionRegion = /us only|usa only|uk only|canada only|eu residents|must be authorized to work in|must reside in|us based|uk based|eu based|north america|europe only|latam|apac/i.test(text);
+  const hasNonAfricanLoc = /united states|usa|\bus\b|canada|united kingdom|\buk\b|germany|france|spain|italy|netherlands|australia|brazil|india|israel/i.test(locationRaw.toLowerCase());
+  const hasExplicitAfricaOrWorldwide = /worldwide|work from anywhere|anywhere in the world|open to candidates from africa|open to candidates globally|remote (worldwide|global|anywhere)/i.test(text);
 
-  const eligibleRemote = !hasExclusion && (hasExplicitAfrica || text.includes('remote'));
+  const eligibleRemote = !hasExclusionRegion && !hasNonAfricanLoc && hasExplicitAfricaOrWorldwide;
 
   let typeFinal: "remote_afrique" | "relocation" | "aucun" = "aucun";
-  if (eligibleRemote) {
-    typeFinal = "remote_afrique";
-  } else if (isRelocation) {
+  if (isRelocation) {
     typeFinal = "relocation";
+  } else if (eligibleRemote) {
+    typeFinal = "remote_afrique";
   }
 
   return {
     eligible_remote_afrique: eligibleRemote,
-    confidence_remote: eligibleRemote ? (hasExplicitAfrica ? "haute" : "moyenne") : "faible",
+    confidence_remote: eligibleRemote ? "haute" : "faible",
     justification_remote: eligibleRemote
-      ? "Offre ouverte au travail à distance international sans restriction géographique stricte excluant l'Afrique."
-      : "Restrictions géographiques ou d'autorisation de travail identifiées hors Afrique.",
+      ? "Offre ouverte au travail à distance international sans restriction géographique excluant l'Afrique."
+      : "Restrictions géographiques ou manque de mention d'ouverture internationale/Afrique.",
     relocation_disponible: isRelocation,
     confidence_relocation: isRelocation ? "haute" : "faible",
     justification_relocation: isRelocation
-      ? "Prise en charge du visa, logement ou frais de voyage mentionnée par l'employeur."
-      : "Aucune prise en charge explicite de relocation ou visa détectée.",
-    pays_destination_relocation: countryMatch,
+      ? "Prise en charge du visa ou de la relocation mentionnée par l'employeur."
+      : "Aucune prise en charge explicite du visa/relocation.",
+    pays_destination_relocation: isRelocation ? countryMatch : null,
     type_offre_final: typeFinal
   };
 }
@@ -97,12 +92,13 @@ function classifierHeuristique(titre: string, entreprise: string, description: s
 export async function classifierOffre(
   titre: string,
   entreprise: string,
-  description: string
+  description: string,
+  locationRaw: string = ''
 ): Promise<ResultatClassificationIA> {
-  const apiKey = (import.meta as any).env?.VITE_ANTHROPIC_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY;
+  const apiKey = (typeof process !== 'undefined' && process.env ? (process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY) : null);
 
   if (!apiKey) {
-    return classifierHeuristique(titre, entreprise, description);
+    return classifierHeuristique(titre, entreprise, description, locationRaw);
   }
 
   try {
@@ -119,19 +115,19 @@ export async function classifierOffre(
         system: PROMPT_SYSTEME,
         messages: [{
           role: "user",
-          content: `Titre de l'offre : ${titre}\nEntreprise : ${entreprise}\nDescription complète :\n${description}`
+          content: `Titre : ${titre}\nEntreprise : ${entreprise}\nLocalisation Brute : ${locationRaw}\nDescription :\n${description}`
         }]
       })
     });
 
     if (!res.ok) {
-      return classifierHeuristique(titre, entreprise, description);
+      return classifierHeuristique(titre, entreprise, description, locationRaw);
     }
 
     const data = await res.json();
     const textContent = data.content?.find((b: any) => b.type === "text")?.text?.trim() || "{}";
-    return JSON.parse(textContent) as ResultatClassificationIA;
+    return JSON.parse(textContent);
   } catch (err) {
-    return classifierHeuristique(titre, entreprise, description);
+    return classifierHeuristique(titre, entreprise, description, locationRaw);
   }
 }
