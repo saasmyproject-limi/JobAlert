@@ -9,6 +9,7 @@ import { runScholarshipsScraper } from './scholarships_scraper.js';
 import { runInternshipsInformalScraper } from './internships_informal_scraper.js';
 import { runRemoteJobsAggregator } from './remote_jobs_aggregator.js';
 import { runLocalJobsAggregator } from './local_jobs_aggregator.js';
+import { runRelocationJobsAggregator } from './relocation_jobs_aggregator.js';
 
 export async function runAllScrapers() {
   console.log('⏰ ===================================================');
@@ -30,6 +31,9 @@ export async function runAllScrapers() {
 
     console.log('5️⃣ Phase 5 : Agrégation des offres locales au Cameroun (Emploi.cm, MinaJobs, JobinCamer, Louma Jobs, Emploiscameroun, etc.)...');
     await runLocalJobsAggregator();
+
+    console.log('6️⃣ Phase 6 : Agrégation des offres de Relocation & Visa Sponsorship (Canada, USA, France, Belgique, Italie, Allemagne - Portails Officiels Gouv)...');
+    await runRelocationJobsAggregator();
 
     console.log('✅ ===================================================');
     console.log('🎉 TOUTES LES OFFRES ONT ÉTÉ SYNCHRONISÉES AVEC SUCCÈS SUR ESSOR !');
